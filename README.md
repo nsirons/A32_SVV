@@ -1,1 +1,1 @@
-# A32_SVV
+# Structures assignment AE3212 SVV 2018
