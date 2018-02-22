@@ -9,7 +9,7 @@ class aileron:
     stiffener_thickness = 0.0012
     stiffener_height = 0.014
     stiffener_width = 0.018
-    stiffener_amount = 1
+    stiffener_amount = 13
 
 
     def __init__(self):
@@ -118,8 +118,8 @@ def calculate_inertia_zz(aileron):
 
     stiffener_positions = calculate_stiffener_positions(aileron) 
 
-    #plt.plot([x for x,y in stiffener_positions], [y for x,y in stiffener_positions])
-    #plt.show()
+    plt.plot([x for x,y in stiffener_positions], [y for x,y in stiffener_positions])
+    plt.show()
 
     final_inertia_stiffeners = 0
     for x,arm in stiffener_positions:
@@ -160,10 +160,10 @@ def calculate_inertia_yy(aileron):
     inertia_flat_skin = width_angled_skin**3 * aileron.skin_thickness * cos(angle_skin_top)**2 / 12
     final_inertia_flat_skin = calculate_inertia_steiner(inertia_flat_skin, area_flat_skin, (arm_flat_skin - centroid_x))
 
-    inertia_spar = aileron.skin_thickness**3 * aileron.height_aileron / 12
+    inertia_spar = aileron.spar_thickness**3 * aileron.height_aileron / 12
     final_inertia_spar = calculate_inertia_steiner(inertia_spar, area_spar, arm_spar - centroid_x)
 
-    inertia_circular_skin = ((pi*pi + 24) * aileron.height_aileron**3 * aileron.skin_thickness)/(2*pi)
+    inertia_circular_skin = ((pi*pi - 8) * aileron.height_aileron**3 * aileron.skin_thickness)/(2*pi)
     final_inertia_circular_skin = calculate_inertia_steiner(inertia_circular_skin, area_circular_skin, arm_circular_skin - centroid_x)
 
     inertia_stiffener = calculate_stiffener_inertia_yy(aileron)
@@ -189,5 +189,6 @@ aileron_obj = aileron()
 
 x = calculate_inertia_zz(aileron_obj)
 y = calculate_inertia_yy(aileron_obj)
+print(x,y)
 
 print(calculate_rotated_inertia(x,y,0, -26))
