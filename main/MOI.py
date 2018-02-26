@@ -163,3 +163,10 @@ def calculate_rotated_inertia(inertia_uu, inertia_vv, inertia_uv, angle):
     
     return (inertia_zz, inertia_yy, inertia_zy)
 
+
+aileron_obj = aileron()
+
+inertia_uu = calculate_inertia_zz(aileron)
+inertia_vv = calculate_inertia_yy(aileron)
+
+print(calculate_rotated_inertia(inertia_uu, inertia_vv, 0, -26))
