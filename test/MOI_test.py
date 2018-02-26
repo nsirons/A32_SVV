@@ -2,6 +2,7 @@
 import unittest
 from main.MOI import *
 from math import pi
+from main.aileron import aileron
 
 class TestMoI(unittest.TestCase):
         
