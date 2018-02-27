@@ -96,7 +96,7 @@ def find_bending_stresses(x, n, la, x1, x2, x3, xa, d1, d3,
 
         elif x > x1 and x < x2a:
             s1 = 0
-
+        #TODO: There is prob an error here
         Mz = Fy3 * (x3 - x) * s3 + Fy2 * (x2 - x) * s2 + Fy1 * (x1 - x) * s1 - Fx3 * d3 * s3 \
              - Fx1 * d1 * s1 - ((la / 2) - x2) * q * la
         My = Fz1 * (x1 - x) * s1 + P * (x2b - x) * s2b + FzI * (x2a - x) * s2a
