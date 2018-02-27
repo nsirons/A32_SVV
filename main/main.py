@@ -103,6 +103,30 @@ def get_von_misses(sigmaz, tauyz):
         sigmamax.append(sqrt(1/2*((sigmax-sigmay)**2 + (sigmay-sigmaz[i])**2 + (sigmaz[i]-sigmax)**2)) + sqrt(3*(tauxy**2 + tauyz[i]**2 + tauzx**2)))
     return sigmamax
 
+def write_header(fp):
+    fp.write("-------------------------------------------------\n")
+    fp.write("|                 SVV A32 Results               |\n")
+    fp.write("-------------------------------------------------\n")
+
+
+def program_settings(fp):
+    fp.write("-------------------------------------------------\n")
+    fp.write("|          Discretization Parameters            |\n")
+    fp.write("| Amount of segments x-dir: " + str(d)+ "\t\t\t|\n")
+    fp.write("| Step Size x-dir: " + str(dx)+ "\t|\n")
+    fp.write("| Number of discretization points along skin: " + str(n) + "\t|\n")
+    fp.write("-------------------------------------------------\n")
+
+
+def write_forces(fp, reaction_forces_dict):
+    fp.write("-------------------------------------------------\n")
+    fp.write("|               Reaction Forces [N]             |\n")
+    fp.write("| Fy1: " + str(int(reaction_forces_dict['Fy1'])) + "\t\t\t Fz1: " + str(int(reaction_forces_dict['Fz1'])) + "\t|\n")
+    fp.write("| Fy2: " + str(int(reaction_forces_dict['Fy2'])) + "\t\t\t Fz2: " + str(int(reaction_forces_dict['Fz2'])) + "\t|\n")
+    fp.write("| Fy3: " + str(int(reaction_forces_dict['Fy3'])) + "\t\t\t FzI: " + str(int(reaction_forces_dict['FzI'])) + "\t|\n")
+    fp.write("-------------------------------------------------\n")
+
+
 def main(args):
     
     parser = argparse.ArgumentParser(description="SVV Program 2018 A32")
@@ -166,8 +190,13 @@ def main(args):
         sigma_max_lst.append(sigma_max)
 
 
-    plt.plot([x[0] for x in x_lst], [s[0] for s in sigma_max_lst])
-    plt.show()
+    #plt.plot([x[0] for x in x_lst], [s[0] for s in sigma_max_lst])
+    #plt.show()
+
+    #Write Output
+    write_header(arguments.out)
+    program_settings(arguments.out)
+    write_forces(arguments.out, reaction_forces_dict)
 
    
 
