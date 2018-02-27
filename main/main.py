@@ -26,8 +26,8 @@ t_st = 1.2e-3
 h_st = 1.4e-2  # Height of stiffener
 w_st = 1.8e-2  # Width of stiffener
 n_st = 13  # number of stringers
-d_1 = 6.81e-2  # ver. displacement hinge 1
-d_3 = 20.3e-2  # ver. displacement hinge 3
+d_1 = 6.81e-2/2.54  # ver. displacement hinge 1
+d_3 = 20.3e-2/2.54  # ver. displacement hinge 3
 d_act1 = 0  # ? # iterative*
 d_act2 = 0  # ? # iterative*
 theta = 26 * np.pi/180  # Maximum upward deflection
@@ -81,13 +81,13 @@ def get_section_properties(aileron_obj):
 
 
 def get_reaction_forces(I_zz, I_yy, I_zy):
-    x = reaction_forces(C_a, l_a, h_a, x_a, x_1, x_2, x_3, d_1, d_3, d_act1, d_act2, theta, E, P, q, I_yy, I_zz, I_zy)
+    x = reaction_forces(C_a, l_a, h_a, x_a, x_1, x_2, x_3, d_1, d_3, d_act1, d_act2, degrees(theta), E, P, q, I_zz, I_yy, I_zy)
     reaction_forces_dict = {
         'Fy1': x[0][0],
-        'Fz1': x[3][0],
-        'Fy2': x[1][0],
-        'Fz2': x[4][0],
-        'Fy3': x[2][0],
+        'Fz1': x[1][0],
+        'Fy2': x[2][0],
+        'Fz2': x[3][0],
+        'Fy3': x[4][0],
         'FzI': x[5][0]
         }
     return reaction_forces_dict
@@ -109,7 +109,7 @@ def write_header(fp):
     fp.write("-------------------------------------------------\n")
 
 
-def program_settings(fp):
+def write_program_settings(fp):
     fp.write("-------------------------------------------------\n")
     fp.write("|          Discretization Parameters            |\n")
     fp.write("| Amount of segments x-dir: " + str(d)+ "\t\t\t|\n")
@@ -117,6 +117,14 @@ def program_settings(fp):
     fp.write("| Number of discretization points along skin: " + str(n) + "\t|\n")
     fp.write("-------------------------------------------------\n")
 
+
+def write_section_properties(fp, Izz, Iyy, Izy):
+    fp.write("-------------------------------------------------\n")
+    fp.write("|          Discretization Parameters            |\n")
+    fp.write("| Inertia zz: " + str(Izz)+ "\t\t|\n")
+    fp.write("| Inertia yy: " + str(Iyy)+ "\t\t|\n")
+    fp.write("| Inertia zy: " + str(Izy) + "\t\t|\n")
+    fp.write("-------------------------------------------------\n")
 
 def write_forces(fp, reaction_forces_dict):
     fp.write("-------------------------------------------------\n")
@@ -190,12 +198,13 @@ def main(args):
         sigma_max_lst.append(sigma_max)
 
 
-    #plt.plot([x[0] for x in x_lst], [s[0] for s in sigma_max_lst])
-    #plt.show()
+    plt.plot([x[0] for x in x_lst], [s[0] for s in sigma_max_lst])
+    plt.show()
 
     #Write Output
     write_header(arguments.out)
-    program_settings(arguments.out)
+    write_program_settings(arguments.out)
+    write_section_properties(arguments.out, I_zz, I_yy, I_zy)
     write_forces(arguments.out, reaction_forces_dict)
 
    
