@@ -1,34 +1,32 @@
 import numpy as np
+from math import sin, cos, radians, sqrt
 
 
-def reaction_forces(C_a, l_a, h_a, x_a, x_1, x_2, x_3, d_1, d_3, d_act1, d_act2, theta, E, P, q, I_zz, I_yy, I_yz):
+def reaction_forces(ca, la, ha, xa, x1, x2, x3, d1, d3, d_act1, d_act2, angle, E, p, q, Izz, Iyy, Izy):
 
-    v_bot = E * ((I_zz * I_yy) - (I_yz ** 2))
-    y_p = (h_a / 2) * np.cos(theta)
-    z_q = (C_a / 4 - h_a / 2) * np.cos(theta)
 
-    a = np.array([[1, 1, 1, 0, 0, 0, 0, 0],
-                  [0, 0, 0, 1, 1, 1, 0, 0],
-                  [0, 0, 0, d_1, 0, (y_p + d_act1), 0, 0],
-                  [0, 0, 0, (x_2 - x_1), 0, x_a / 2, 0, 0],
-                  [-(x_2 - x_1), 0, (x_3 - x_2), 0, 0, 0, 0, 0],
-                  [0, 0, 0, 0, 0, (1 / 6) * I_yz / v_bot, x_1 / v_bot, 1 / v_bot],
-                  [(I_yy * (x_2 - x_1) ** 3) / (6 * v_bot), 0, 0, ((1 / 6) * I_yz * (x_2 - x_1) ** 3) / v_bot, 0,
-                   ((1 / 6) * I_yz * (x_a / 2) ** 3) / v_bot, x_2 / v_bot, 1 / v_bot],
-                  [(I_yy * (x_3 - x_1) ** 3) / (6 * v_bot), (I_yy * (x_3 - x_2) ** 3) / (6 * v_bot), 0,
-                   (I_yz * (x_3 - x_1) ** 3) / (6 * v_bot), (I_yz * (x_3 - x_2) ** 3) / (6 * v_bot),
-                   (I_yz * (x_3 - x_2 + (x_a / 2)) ** 3) / (6 * v_bot), x_3 / v_bot, 1 / v_bot]])
+    c = -1/(E*(Izz*Iyy - (Izy**2)))
 
-    b = np.array([[q * l_a],
-                  [P],
-                  [P * (y_p + d_act2) + (q * l_a * z_q)],
-                  [-0.5 * x_a * P],
-                  [(l_a / 2 - x_2) * q * l_a],
-                  [q * I_yy * (x_1 ** 4) / (24 * v_bot)],
-                  [((q * I_yy * (x_2 ** 4)) / (24 * v_bot)) + ((P * I_yz * (x_a / 2) ** 3) / (6 * v_bot)) - d_1],
-                  [((q * I_yy * (x_3 ** 4)) / (24 * v_bot)) + (
-                          (P * I_yz * (x_3 - x_2 - (x_a / 2)) ** 3) / (6 * v_bot)) - d_1 + d_3]])
+    # x =        [Ay Az By Bz Cy Dz K1 K2]T
+    A = np.array([[1, 0, 1, 0, 1, 0, 0, 0],
+                 [0, 1, 0, 1, 0, 1, 0, 0],
+                 [0, d1,0, 0, 0, sin(radians(135+angle))*ha/sqrt(2),0, 0],
+                 [0, x2-x1,0,0,0,xa/2., 0, 0],
+                 [-(x2-x1),0,0,0,(x3-x2),0,0,0],
+                 [0, 0, 0, 0, 0, 0, x1*c, c],
+                 [-c*((x2-x1)**3)/6.*Iyy, -c*((x2-x1)**3)/6.*Izy, 0, 0, 0, -c*((x2 - (x2 - xa/2.))**3)/6.*Izy, x2*c, c],
+                 [-c*((x3-x1)**3)/6.*Iyy, -c*((x3-x1)**3)/6.*Izy, -c*((x3-x2)**3)/6.*Iyy, -c*((x3-x2)**3)/6.*Izy, 0, -c*((x3 - (x2 - xa/2.))**3)/6.*Izy, x3*c, c]])
 
-    x = np.linalg.solve(a, b)
+    C = np.array([[-q*la],
+                 [-p],
+                 [-q*la*(ca/4 - ha/2)*cos(radians(angle)) - p*sin(radians(135+angle))*ha/sqrt(2)],
+                 [p*xa/2],
+                 [-q*la*(la/2 - x2)],
+                 [c*q*(x1**4)/24.*Iyy],
+                 [c*q*(x2**4)/24.*Iyy],
+                 [c*q*(x3**4)/24.*Iyy + c*p/6*((x3-(x2+xa/2.))**3)*Izy]])
 
+    B = np.array([[0],[0],[0],[0],[0],[0],[-d1],[-d1+d3]])
+    T = B-C
+    x=np.linalg.solve(A,T)
     return x
