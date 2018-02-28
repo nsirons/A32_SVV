@@ -4,3 +4,4 @@
 .vscode/settings.json
 *.json
 /.vs/*
+/main/*.html
