@@ -2,6 +2,7 @@
 from reaction_forces import reaction_forces
 from bendingstresses import find_bending_stresses
 from shearstressestorshe import find_shear_stresses
+from forcesmomentsfunc import int_shear, int_moment
 import numpy as np
 import logging
 import sys
@@ -75,7 +76,7 @@ def get_section_properties(aileron_obj):
     I_yy = Ivec[1]
     I_zy = Ivec[2]
     ybar = 0#None  # change to functions
-    zbar = 0.15#None  # change to functions
+    zbar = 0.189#None  # change to functions
 
     return I_zz, I_yy, I_zy, ybar, zbar
 
@@ -91,6 +92,15 @@ def get_reaction_forces(I_zz, I_yy, I_zy):
         'FzI': x[5][0]
         }
     return reaction_forces_dict
+
+
+def get_moment_functions(reaction_forces_dict):
+    sf_y = int_shear([x_1, x_2, x_3, l_a], [reaction_forces_dict['Fy1'], reaction_forces_dict['Fy2'], reaction_forces_dict['Fy3'], 0], -q)
+    sf_z = int_shear([x_1, (x_2-x_a/2), x_2, (x_2+x_a/2), l_a], [reaction_forces_dict['Fz1'], reaction_forces_dict['FzI'], reaction_forces_dict['Fz2'], -P, 0], -q)
+    m_z = int_moment(sf_z)
+    m_y = int_moment(sf_y)
+    return (sf_y, sf_z, m_y, m_z)
+    
 
 
 def get_von_misses(sigmaz, tauyz):
@@ -163,7 +173,16 @@ def main(args):
     else:
         reaction_forces_dict = get_reaction_forces(I_zz, I_yy, I_zy)
 
-        F_y1, F_y2, F_y3, F_z1, F_z2, F_zI = convert_reaction_forces_dict(reaction_forces_dict)
+    F_y1, F_y2, F_y3, F_z1, F_z2, F_zI = convert_reaction_forces_dict(reaction_forces_dict)
+
+    F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
+
+    ##plt.plot(np.linspace(0,l_a, 50), F_y(np.linspace(0,l_a,50)))
+    ##plt.plot(np.linspace(0,l_a, 50), F_z(np.linspace(0,l_a,50)))
+    ##plt.plot(np.linspace(0,l_a, 50), M_y(np.linspace(0,l_a,50)))
+    ##plt.plot(np.linspace(0,l_a, 50), M_z(np.linspace(0,l_a,50)))
+    #plt.show()
+
 
     #start loop over length
 
@@ -175,9 +194,10 @@ def main(args):
     sigma_max_lst = []
 
     for current_distance in np.arange(0, l_a, dx):
+        print(current_distance)
 
         #Bending stresses
-        x_pos, y_pos, z_pos, sigma_z = find_bending_stresses(current_distance, n, l_a, x_1, x_2, x_3, x_a, d_1, d_3, I_zz, I_yy, I_zy, ybar, zbar, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
+        x_pos, y_pos, z_pos, sigma_z = find_bending_stresses(current_distance, n, l_a, x_1, x_2, x_3, x_a, d_1, d_3, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
 
         #Shear stresses
         tau_yz = find_shear_stresses(current_distance, n, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)

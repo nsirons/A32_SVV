@@ -3,3 +3,4 @@
 /main/__pycache__
 *.json
 /.vs/*
+/main/rf.py

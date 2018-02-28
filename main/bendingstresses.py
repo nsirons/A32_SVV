@@ -43,67 +43,23 @@ def calculate_stringer_positions(stiffener):
 
 def find_bending_stresses(x, n, la, x1, x2, x3, xa, d1, d3,
                           Izz, Iyy, Izy, ybar, zbar,
-                          Fy1, Fy2, Fy3, Fx1, Fx3, Fz1, FzI, P, q):
-
-    x2a = x2 - xa / 2  # x-location actuator 1
-    x2b = x2 + xa / 2  # x-location actuator 2
-
-    # --------------------------------------BENDING------------------------------------------------
-
-    # return lists
+                          My, Mz):
+   
     xlst = []
     ylst = []
     zlst = []
     sigmaxlst = []
-
-    # Steps (switching terms on/off)
-    s1 = 1
-    s2 = 1
-    s2a = 1
-    s2b = 1
-    s3 = 1
-
-    # x = 0
-    # dx = 0.1 #discretization along length aileron
-    # n = 50 #discretization cross-section
 
     positions = calculate_stringer_positions(n)
 
     for i in range(len(positions)):
         z = zbar - positions[i][0]
         y = positions[i][1]
-        if x > x3:
-            s3 = 0
-            s2 = 0
-            s2a = 0
-            s2b = 0
-            s1 = 0
+       
+        M_y = My(x)
+        M_z = Mz(x)
 
-        elif x > x2b and x < x3:
-            s2 = 0
-            s2a = 0
-            s2b = 0
-            s1 = 0
-
-        elif x > x2 and x < x2b:
-            s2 = 0
-            s2a = 0
-            s1 = 0
-
-        elif x > x2a and x < x2:
-            s2a = 0
-            s1 = 0
-
-        elif x > x1 and x < x2a:
-            s1 = 0
-        #TODO: There is prob an error here
-        Mz = Fy3 * (x3 - x) * s3 + Fy2 * (x2 - x) * s2 + Fy1 * (x1 - x) * s1 - Fx3 * d3 * s3 \
-             - Fx1 * d1 * s1 - ((la / 2) - x2) * q * la
-        My = Fz1 * (x1 - x) * s1 + P * (x2b - x) * s2b + FzI * (x2a - x) * s2a
-        # Mzlst.append(Mz)
-        # Mylst.append(My)
-
-        sigmax = ((Mz * Iyy - My * Izy) * y + (My * Izz - Mz * Izy) * z) / (Izz * Iyy - Izy ** 2)
+        sigmax = ((-M_z * Iyy - M_y * Izy) * y + (M_y * Izz + M_z * Izy) * z) / (Izz * Iyy - Izy ** 2)
         # print(z,y,sigmax)
         sigmaxlst.append(sigmax)
         xlst.append(x)
