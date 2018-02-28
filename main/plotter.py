@@ -3,6 +3,7 @@ import plotly.figure_factory as FF
 
 import numpy as np
 from scipy.spatial import Delaunay
+from scipy.interpolate import griddata
 
 
 def gen_mesh(x,y):
@@ -13,6 +14,82 @@ def gen_mesh(x,y):
     v = v.flatten()
     return u,v
 
+
+def plot(node_data, node_stress, dx, ds):
+
+   #+1 from point at TE
+    ds = ds+2
+    u = np.arange(0, ds, 1)
+    v = np.arange(0, dx, 1)
+
+    #u along cross-section, v along length
+    u,v = np.meshgrid(u,v)
+
+    u = u.flatten()
+    v = v.flatten()
+
+    x=[]
+    y=[]
+    z=[]
+
+    xxx = u + v
+
+    print(node_data)
+
+    for i, j in zip(u,v):
+        xx = i + j
+        xx = node_data[j*ds + i][1]*1e3
+        yy = node_data[j*ds + i][2]*1e3
+        zz = node_data[j*ds + i][3]*1e3
+        x.append(xx)
+        y.append(yy)
+        z.append(zz)
+
+
+    points2D = np.vstack([u,v]).T
+    tri = Delaunay(points2D)
+    simplices = tri.simplices
+
+    nodes = len(node_data)
+    stresses = node_stress[:,1]
+    xs = np.array([node_data[:,1]]).transpose()
+    ys =  np.array([node_data[:,2]]).transpose()
+    zs =  np.array([node_data[:,3]]).transpose()
+    
+    
+    
+
+    def f(x,y,z):
+        print(x/(1e3),y/(1e3),z/(1e3))
+        xq, yq, zq = np.meshgrid(x/(1e3),y/(1e3),z/(1e3))
+        vq = griddata(np.concatenate((xs,ys,zs), axis=1),stresses, (xq, yq, zq))
+        print(vq)
+        return vq
+
+    #f = RegularGridInterpolator((node_data[1], node_data[2], node_data[3]),stresses) 
+
+  
+
+    camera = dict(
+        up=dict(x=0, y=1, z=0),
+        center=dict(x=0, y=0, z=0),
+        eye=dict(x=1, y=0.1, z=0.1)
+    )
+    fig1 = FF.create_trisurf(x=x, y=y, z=z,
+                                simplices=simplices,
+                                title="aileron",
+                                colormap="Portland",
+                                show_colorbar=True,
+                                color_func=f,
+                                aspectratio=dict(x=1, y=(max(y)-min(y)) / 1691, z=(max(z)-min(z)) / 1691),
+                                )
+
+    import plotly.graph_objs as go
+    trace = go.Scatter3d()
+    # fig1['layout'].update(
+    #     scene=dict(camera=camera))
+    plotly.offline.plot(fig1, filename="Aileron")
+    #plotly.offline.plot([fig1.data[0],fig2.data[0], trace], filename="Aileron.html",)
 
 def plotter(node_data,*, node_stress=None, node_U=None, show_stress=True):
     # TODO : theta as function of x
@@ -143,10 +220,13 @@ def plotter(node_data,*, node_stress=None, node_U=None, show_stress=True):
                              color_func=stress_color,
                              aspectratio=dict(x=1, y=(max(y)-min(y)) / 1691, z=(max(z)-min(z)) / 1691),
                              )
+
+    print(simplices_skin)
+
     import plotly.graph_objs as go
     trace = go.Scatter3d()
     # fig1['layout'].update(
     #     scene=dict(camera=camera))
     plotly.offline.plot(fig1, filename="Aileron")
-    # plotly.offline.plot([fig1.data[0], trace], filename="Aileron.html",)
+    #plotly.offline.plot([fig1.data[0],fig2.data[0], trace], filename="Aileron.html",)
 

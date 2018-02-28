@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 from math import *
 import numpy as np
-from bendingstresses import calculate_stringer_positions
+from bendingstresses import discretize_skin
 
-def find_shear_stresses(x, n, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
+def find_shear_stresses(x, discretized_skin_pos, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
                           tsp, tsk, dact1, dact2, Izz, Iyy, Izy, ybar, zbar,
                           theta, Fz2, Fy1, Fy2, Fy3, Fx1, Fx3, Fz1,
                         FzI, P, q):
@@ -55,9 +55,10 @@ def find_shear_stresses(x, n, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
     #print(sol[2])
 
     #finding array of coordinates
-    positions = calculate_stringer_positions(n)
+    positions = discretized_skin_pos
 
     shearstress = []
+
     
     for i in range(len(positions)):
         if x == la:
@@ -166,6 +167,8 @@ def find_shear_stresses(x, n, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
             shearstress.append(float(q12)/tsk)
         elif positions[i][0] > ha/2 and positions[i][1] < 0:
             shearstress.append(float(q23)/tsk)
+        else:
+            shearstress.append(0)
     return shearstress
     #print(sol[1])
     #print(q23)
