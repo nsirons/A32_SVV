@@ -44,17 +44,17 @@ def discretize_skin(stiffener):
     return stringer_positions
 
 
-def find_bending_stresses(x, discretized_skin_pos, Izz, Iyy, Izy, ybar, zbar, My, Mz, angle):
+def find_bending_stresses(x, rotated_discretized_skin_pos, Izz, Iyy, Izy, ybar, zbar, My, Mz):
 
     sigmaxlst = []
 
-    positions = discretized_skin_pos
+    positions = rotated_discretized_skin_pos
 
     #rotation issuesss
 
     for i in range(len(positions)):
-        z = positions[i][0] - zbar
-        y = positions[i][1]
+        z = -(positions[i][0] - zbar)
+        y = positions[i][1] - ybar
        
         M_y = My(x)
         M_z = Mz(x)

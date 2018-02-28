@@ -111,6 +111,33 @@ def calculate_inertia_zz(aileron):
 
     return total_inertia
 
+def calculate_zbar(aileron):
+    width_angled_skin = sqrt( (aileron.height_aileron/2)**2 + (aileron.chord_aileron - aileron.height_aileron/2)**2 )
+    length_total_skin = width_angled_skin*2 + pi*(aileron.height_aileron/2)
+    angle_skin_top = -1* atan2(aileron.height_aileron/2, aileron.chord_aileron - aileron.height_aileron/2)
+    area_stiffener = aileron.stiffener_thickness*aileron.stiffener_width + (aileron.stiffener_height-aileron.stiffener_thickness)*aileron.stiffener_thickness
+
+    area_flat_skin = aileron.skin_thickness * width_angled_skin
+    arm_flat_skin = (aileron.chord_aileron - aileron.height_aileron/2)/2 + aileron.height_aileron/2
+
+    area_circular_skin = pi*aileron.height_aileron/2 * aileron.skin_thickness
+    arm_circular_skin = aileron.height_aileron/2 - 2*aileron.height_aileron/2/pi
+
+    area_spar = aileron.height_aileron * aileron.spar_thickness
+    arm_spar = aileron.height_aileron/2
+
+
+    stiffener_positions = calculate_stiffener_positions(aileron)
+
+    stiffener_FMOA_sum = 0
+    for x,y in stiffener_positions:
+        stiffener_FMOA_sum += area_stiffener*x
+
+    centroid_x = (stiffener_FMOA_sum + area_circular_skin*arm_circular_skin + 2*(area_flat_skin*arm_flat_skin) + area_spar*arm_spar )/\
+                 (aileron.stiffener_amount*area_stiffener + area_circular_skin + 2* area_flat_skin + area_spar)
+
+    return centroid_x - aileron.height_aileron/2
+
 def calculate_inertia_yy(aileron):
 
     width_angled_skin = sqrt( (aileron.height_aileron/2)**2 + (aileron.chord_aileron - aileron.height_aileron/2)**2 )

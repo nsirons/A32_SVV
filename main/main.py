@@ -11,7 +11,7 @@ import argparse
 from math import *
 import matplotlib.pyplot as plt
 from aileron import aileron
-from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia
+from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia, calculate_zbar
 from tools import *
 
 # -- Geometry --
@@ -76,10 +76,12 @@ def get_section_properties(aileron_obj):
     I_zz = Ivec[0]
     I_yy = Ivec[1]
     I_zy = Ivec[2]
-    ybar = 0#None  # change to functions
-    zbar = 0.189#None  # change to functions
+    ybar = 0
+    zbar = -calculate_zbar(aileron_obj)
 
-    return I_zz, I_yy, I_zy, ybar, zbar
+    y_bar, z_bar = rotate_points_yz([ybar],[zbar],0,0,theta)
+
+    return I_zz, I_yy, I_zy, y_bar[0], z_bar[0]
 
 def get_reaction_forces(I_zz, I_yy, I_zy):
     x = reaction_forces(C_a, l_a, h_a, x_a, x_1, x_2, x_3, d_1, d_3, d_act1, d_act2, degrees(theta), E, P, q, I_zz, I_yy, I_zy)
@@ -218,11 +220,14 @@ def main(args):
     discretized_skin_pos = discretize_skin(n) 
     z_pos_f, y_pos_f = [i[0] for i in discretized_skin_pos], [i[1] for i in discretized_skin_pos]
 
+    tmp = rotate_points_yz(y_pos_f, z_pos_f, 0, 0, theta)
+    rotated_discretized_skin_pos = [ [tmp[1][i],tmp[0][i]] for i in range(len(tmp[0]))]
+
     for current_distance in np.arange(0, l_a, dx):
         print(current_distance) 
 
         #Bending stresses
-        sigma_z = find_bending_stresses(current_distance, discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z, theta)
+        sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
          
         #Shear stresses
         tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
