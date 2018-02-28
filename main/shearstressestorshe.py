@@ -60,8 +60,15 @@ def find_shear_stresses(x, n, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
     shearstress = []
     
     for i in range(len(positions)):
-
-        if x>x3:
+        if x == la:
+            s3 = 0
+            s2 = 0
+            s2a = 0
+            s2b = 0
+            s1 = 0
+            sa = 0 
+            sb = 0
+        elif x>x3:
             s3 = 0
             s2 = 0
             s2a = 0
@@ -103,6 +110,15 @@ def find_shear_stresses(x, n, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
             s1 = 0
             sb = 0
 
+        elif x==0:
+            s3 = 0
+            s2 = 0
+            s2a = 0
+            s2b = 0
+            s1 = 0
+            sb = 0
+            sa = 0
+
         Sz = Fz1*s1 + FzI*s2a + Fz2*s2 - P*s2b
         Sy = Fy1*s1 + Fy2*s2 + Fy3*s3 - q*x*sa - q*(x3-x)*sb
         T = -P*(dact2)*s2b + FzI*(dact1)*s2a + Fz1*(d1-yp)*s1 - ((Ca/4)*cos(theta))*q*x*sa - ((Ca/4)*cos(theta))*q*(x3-x)*sb
@@ -128,8 +144,9 @@ def find_shear_stresses(x, n, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
 
         dthetadxc1 = (q12_Ib*(pi*ha/2)/tsk + q21b*ha/tsp)/(2*A1*G)
         dthetadxc2 = (q23b*c/tsk + q31b*c/tsp + q12_IIb*ha/tsp)/(2*A2*G)
+        Tvar = -(q23b+q31b)*(ha/2*sin(atan((Ca-ha/2)/(ha/2))))-2*q12_Ib*ha/2
 
-        b = np.matrix([[T-(q23b+q31b)*(ha/2*sin(atan((Ca-ha/2)/(ha/2))))],
+        b = np.matrix([[T+Tvar],
                        [dthetadxc1],
                        [dthetadxc2]])
         sol=np.linalg.solve(A,b)
