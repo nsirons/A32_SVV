@@ -1,8 +1,9 @@
 # constants/geometry
 from reaction_forces import reaction_forces
-from bendingstresses import find_bending_stresses
+from bendingstresses import find_bending_stresses, discretize_skin
 from shearstressestorshe import find_shear_stresses
 from forcesmomentsfunc import int_shear, int_moment
+from plotter import plotter, plot
 import numpy as np
 import logging
 import sys
@@ -35,7 +36,7 @@ theta = 26 * np.pi/180  # Maximum upward deflection
 
 # -- Loads --
 P = 37.9e3  # load in actuator 2
-q = 27.1e3  # net aerodynamic load
+q = 27.1e2  # net aerodynamic load
 
 # -- Material Property
 # source: http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=ma2024t3
@@ -43,10 +44,10 @@ E = 73.1e9  # Young modulus aluminium 2024-T3
 G = 28.e9  # Shear modulus aluminium 2024-T3
 
 # Calculate normal stress along the cross-sectional area and x direction
-d = 500 #discretization along span
+d = 15 #discretization along span
 x = 0 #initial x-coordinate
 dx = l_a/(d+1) #steps along span
-n = 3  # number of discretized points
+n = 15  # number of discretized points
 x_points = []
 y_points = []
 z_points = []
@@ -80,7 +81,6 @@ def get_section_properties(aileron_obj):
 
     return I_zz, I_yy, I_zy, ybar, zbar
 
-
 def get_reaction_forces(I_zz, I_yy, I_zy):
     x = reaction_forces(C_a, l_a, h_a, x_a, x_1, x_2, x_3, d_1, d_3, d_act1, d_act2, degrees(theta), E, P, q, I_zz, I_yy, I_zy)
     reaction_forces_dict = {
@@ -93,16 +93,13 @@ def get_reaction_forces(I_zz, I_yy, I_zy):
         }
     return reaction_forces_dict
 
-
 def get_moment_functions(reaction_forces_dict):
-    sf_y = int_shear([x_1, x_2, x_3, l_a], [reaction_forces_dict['Fy1'], reaction_forces_dict['Fy2'], reaction_forces_dict['Fy3'], 0], -q)
-    sf_z = int_shear([x_1, (x_2-x_a/2), x_2, (x_2+x_a/2), l_a], [reaction_forces_dict['Fz1'], reaction_forces_dict['FzI'], reaction_forces_dict['Fz2'], -P, 0], -q)
+    sf_y = lambda x: -reaction_forces_dict['Fy1']*heaviside(x-x_1) + -reaction_forces_dict['Fy2'] * heaviside(x-x_2) + -reaction_forces_dict['Fy3']*heaviside(x-x_3) + q*x
+    sf_z = lambda x: reaction_forces_dict['Fz1']*heaviside(x-x_1) + reaction_forces_dict['FzI'] * heaviside(x-(x_2 - x_a/2)) + reaction_forces_dict['Fz2'] * heaviside(x-x_2) - P*heaviside(x-(x_2 + x_a/2))
     m_z = int_moment(sf_z)
     m_y = int_moment(sf_y)
     return (sf_y, sf_z, m_y, m_z)
     
-
-
 def get_von_misses(sigmaz, tauyz):
     sigmamax = []
     sigmay = 0
@@ -113,11 +110,31 @@ def get_von_misses(sigmaz, tauyz):
         sigmamax.append(sqrt(1/2*((sigmax-sigmay)**2 + (sigmay-sigmaz[i])**2 + (sigmaz[i]-sigmax)**2)) + sqrt(3*(tauxy**2 + tauyz[i]**2 + tauzx**2)))
     return sigmamax
 
+
+def plot_figure(xpos,ypos, zpos, smax):
+
+    n_nodes = len(xpos) * len(xpos[0])
+    
+    xpos = np.array(xpos).reshape(n_nodes,1)
+    ypos = np.array(ypos).reshape(n_nodes,1)
+    zpos = np.array(zpos).reshape(n_nodes,1)
+    smax = np.array(smax).reshape(n_nodes,1)
+    nodes = np.arange(0,n_nodes).reshape(n_nodes,1)
+
+
+    loc = np.concatenate((nodes, xpos, ypos, zpos), axis=1)
+    stress = np.concatenate((nodes, smax), axis=1)
+
+    plot(loc, stress, d, n)
+    
+    
+    
+
+
 def write_header(fp):
     fp.write("-------------------------------------------------\n")
     fp.write("|                 SVV A32 Results               |\n")
     fp.write("-------------------------------------------------\n")
-
 
 def write_program_settings(fp):
     fp.write("-------------------------------------------------\n")
@@ -126,7 +143,6 @@ def write_program_settings(fp):
     fp.write("| Step Size x-dir: " + str(dx)+ "\t|\n")
     fp.write("| Number of discretization points along skin: " + str(n) + "\t|\n")
     fp.write("-------------------------------------------------\n")
-
 
 def write_section_properties(fp, Izz, Iyy, Izy):
     fp.write("-------------------------------------------------\n")
@@ -177,12 +193,18 @@ def main(args):
 
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
 
-    ##plt.plot(np.linspace(0,l_a, 50), F_y(np.linspace(0,l_a,50)))
-    ##plt.plot(np.linspace(0,l_a, 50), F_z(np.linspace(0,l_a,50)))
-    ##plt.plot(np.linspace(0,l_a, 50), M_y(np.linspace(0,l_a,50)))
-    ##plt.plot(np.linspace(0,l_a, 50), M_z(np.linspace(0,l_a,50)))
-    #plt.show()
+    #x = []
+    #y = []
+    #y1 = []
+    #for i in np.arange(0,l_a, 0.001):
+    #    x.append(i)
+    #    y.append(F_y(i))
+    #    y1.append(M_y(i))
 
+    #plt.plot(x,y)
+    #plt.plot(x,y1)
+
+    #plt.show()
 
     #start loop over length
 
@@ -193,33 +215,47 @@ def main(args):
     tau_yz_lst = []
     sigma_max_lst = []
 
+    discretized_skin_pos = discretize_skin(n) 
+    z_pos_f, y_pos_f = [i[0] for i in discretized_skin_pos], [i[1] for i in discretized_skin_pos]
+
     for current_distance in np.arange(0, l_a, dx):
-        print(current_distance)
+        print(current_distance) 
 
         #Bending stresses
-        x_pos, y_pos, z_pos, sigma_z = find_bending_stresses(current_distance, n, l_a, x_1, x_2, x_3, x_a, d_1, d_3, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
-
+        sigma_z = find_bending_stresses(current_distance, discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z, theta)
+         
         #Shear stresses
-        tau_yz = find_shear_stresses(current_distance, n, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
+        tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
         
         #Von Misses
-        sigma_max = get_von_misses(sigma_z, tau_yz)        
+        sigma_max = get_von_misses(sigma_z, tau_yz)  
+
+        #Positions
+        x_pos = [current_distance for i in range(len(y_pos_f))]
+        y_pos = y_pos_f
+        z_pos = z_pos_f
+
+        y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta)
+        
 
         #Deflection
         #deflection_z, deflection_y = get_aileron_deflections()
-
-
+            
         #Store local section results
         x_lst.append(x_pos)
         y_lst.append(y_pos)
         z_lst.append(z_pos)
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
-        sigma_max_lst.append(sigma_max)
+        sigma_max_lst.append(sigma_z)
 
 
-    plt.plot([x[0] for x in x_lst], [s[0] for s in sigma_max_lst])
-    plt.show()
+
+    plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
+
+
+    #plt.plot([x[1] for x in x_lst], [s[1] for s in sigma_z_lst])
+    #plt.show()
 
     #Write Output
     write_header(arguments.out)
