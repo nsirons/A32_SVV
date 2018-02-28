@@ -1,6 +1,7 @@
 .idea
 .cache
 /main/__pycache__
+.vscode/settings.json
 *.json
 /.vs/*
-/main/rf.py
+/main/*.html
