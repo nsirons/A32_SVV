@@ -1,9 +1,11 @@
 import numpy as np
 # TODO: Unit-tests
 
+
 def f2_local(Fz, Fy, theta):
     return np.reshape(np.array([-Fz, Fy]) @ np.array([[np.cos(theta), -np.sin(theta)],
                                                       [np.sin(theta), np.cos(theta)]]), (2, 1))
+
 
 def calc_shear(Ca, ha, t_skin, t_spar, theta, G,
                Izz, Iyy, Izy,

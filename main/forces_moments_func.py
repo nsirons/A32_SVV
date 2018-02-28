@@ -5,18 +5,21 @@ import numpy as np
 
 
 def int_shear(x, y, q=0):
-    dx = 0.00000000001  # small offset, for step jump
+    dx = 0.00000000000001  # small offset, for step jump
 
-    if x[0] != 0:
-        x = [0] + x
-        y = [0] + y
+    x_shear = []
+    y_shear = []
+    for i in range(len(x)-1):
+        x_shear.append([x[i],x[i+1]-dx])
+        y_shear.append([sum(y[:i+1])+x[i]*q, sum(y[:i+1])+(x[i+1]-dx)*q])
+    x_shear.append(x[-1])
+    y_shear.append(sum(y)+q*x[-1])
 
-    x_shear = list(chain(*[[x[i], x[i + 1] - dx] for i in range(len(x) - 1)])) + [x[-1]]
-    y_shear = [
-        sum(y[:x.index(x_new) + 1]) + q * x[x.index(x_new)] if x_new in x else sum(y[:x.index(x_new + dx)]) + q * x_new
-        for x_new in x_shear]
+    f_get_val = lambda val: interp1d(x_shear[[val <= i[1] for i in x_shear[:-1]].index(True)],
+                                y_shear[[val <= i[1] for i in x_shear[:-1]].index(True)], kind='linear')(val) if val != x_shear[-1] else y_shear[-1]
 
-    return interp1d(x_shear, y_shear, kind='linear')
+    import collections
+    return lambda xx : [f_get_val(j) for j in xx] if isinstance(xx, collections.Iterable) else f_get_val(xx)
 
 
 def int_moment(f_shear):
@@ -24,11 +27,3 @@ def int_moment(f_shear):
     import collections
     return lambda x: [integrate.quad(f_shear, 0, i)[0] for i in x] if isinstance(x, collections.Iterable) else integrate.quad(f_shear, 0, x)[0]
 
-# example
-# s_f = int_shear([pos],[forces], distributed load])
-# s_f = int_shear([0, 10, 20], [10, 20, -30], 0)
-# m_f = int_moment(s_f)
-# print(s_f(3))
-# print(s_f([1,2,3]))
-# print(m_f(3))
-# print(m_f([1,2,3]))
