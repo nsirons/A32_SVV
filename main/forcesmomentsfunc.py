@@ -27,3 +27,15 @@ def int_moment(f_shear):
     import collections
     return lambda x: [integrate.quad(f_shear, 0, i)[0] for i in x] if isinstance(x, collections.Iterable) else integrate.quad(f_shear, 0, x)[0]
 
+
+def int_moment_I(f_shear, max):
+    import collections
+
+    dt=0.00001
+    x =  np.arange(0,max+dt,dt)
+    lst_i  = [f_shear(0)*dt]
+    for i in range(1, len(x)):
+        lst_i.append(f_shear(x[i])*dt + lst_i[i-1])
+    f = interp1d(x, lst_i, kind='linear')
+    return lambda y: [f(i) for i in y] if isinstance(y, collections.Iterable) else f(y)
+

@@ -2,7 +2,7 @@
 from reaction_forces import reaction_forces
 from bendingstresses import find_bending_stresses, discretize_skin
 from shearstressestorshe import find_shear_stresses
-from forcesmomentsfunc import int_shear, int_moment
+from forcesmomentsfunc import int_shear, int_moment, int_moment_I
 from plotter import plotter, plot
 import numpy as np
 import logging
@@ -44,10 +44,10 @@ E = 73.1e9  # Young modulus aluminium 2024-T3
 G = 28.e9  # Shear modulus aluminium 2024-T3
 
 # Calculate normal stress along the cross-sectional area and x direction
-d = 15 #discretization along span
+d = 10 #discretization along span
 x = 0 #initial x-coordinate
 dx = l_a/(d+1) #steps along span
-n = 15  # number of discretized points
+n = 10  # number of discretized points
 x_points = []
 y_points = []
 z_points = []
@@ -98,8 +98,8 @@ def get_reaction_forces(I_zz, I_yy, I_zy):
 def get_moment_functions(reaction_forces_dict):
     sf_y = lambda x: -reaction_forces_dict['Fy1']*heaviside(x-x_1) + -reaction_forces_dict['Fy2'] * heaviside(x-x_2) + -reaction_forces_dict['Fy3']*heaviside(x-x_3) + q*x
     sf_z = lambda x: reaction_forces_dict['Fz1']*heaviside(x-x_1) + reaction_forces_dict['FzI'] * heaviside(x-(x_2 - x_a/2)) + reaction_forces_dict['Fz2'] * heaviside(x-x_2) - P*heaviside(x-(x_2 + x_a/2))
-    m_z = int_moment(sf_z)
-    m_y = int_moment(sf_y)
+    m_z = int_moment_I(sf_z, l_a)
+    m_y = int_moment_I(sf_y, l_a)
     return (sf_y, sf_z, m_y, m_z)
     
 def get_von_misses(sigmaz, tauyz):
@@ -195,18 +195,18 @@ def main(args):
 
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
 
-    #x = []
-    #y = []
-    #y1 = []
-    #for i in np.arange(0,l_a, 0.001):
-    #    x.append(i)
-    #    y.append(F_y(i))
-    #    y1.append(M_y(i))
+    x = []
+    y = []
+    y1 = []
+    for i in np.arange(0,l_a, 0.001):
+        x.append(i)
+        y.append(F_z(i))
+        y1.append(M_z(i))
 
-    #plt.plot(x,y)
-    #plt.plot(x,y1)
+    plt.plot(x,y)
+    plt.plot(x,y1)
 
-    #plt.show()
+    plt.show()
 
     #start loop over length
 
@@ -223,7 +223,7 @@ def main(args):
     tmp = rotate_points_yz(y_pos_f, z_pos_f, 0, 0, theta)
     rotated_discretized_skin_pos = [ [tmp[1][i],tmp[0][i]] for i in range(len(tmp[0]))]
 
-    for current_distance in np.arange(0, l_a, dx):
+    for current_distance in np.arange(0, l_a+dx, dx):
         print(current_distance) 
 
         #Bending stresses
@@ -231,7 +231,6 @@ def main(args):
          
         #Shear stresses
         tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
-        
         #Von Misses
         sigma_max = get_von_misses(sigma_z, tau_yz)  
 
@@ -252,11 +251,10 @@ def main(args):
         z_lst.append(z_pos)
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
-        sigma_max_lst.append(sigma_z)
+        sigma_max_lst.append(sigma_max)
 
 
-
-    plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
+    plot_figure(x_lst, y_lst, z_lst, tau_yz_lst)
 
 
     #plt.plot([x[1] for x in x_lst], [s[1] for s in sigma_z_lst])

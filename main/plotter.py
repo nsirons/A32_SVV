@@ -19,6 +19,7 @@ def plot(node_data, node_stress, dx, ds):
 
    #+1 from point at TE
     ds = ds+2
+    dx = dx + 2
     u = np.arange(0, ds, 1)
     v = np.arange(0, dx, 1)
 
@@ -32,9 +33,7 @@ def plot(node_data, node_stress, dx, ds):
     y=[]
     z=[]
 
-    xxx = u + v
 
-    print(node_data)
 
     for i, j in zip(u,v):
         xx = i + j
@@ -52,21 +51,18 @@ def plot(node_data, node_stress, dx, ds):
 
     nodes = len(node_data)
     stresses = node_stress[:,1]
-    xs = np.array([node_data[:,1]]).transpose()
-    ys =  np.array([node_data[:,2]]).transpose()
-    zs =  np.array([node_data[:,3]]).transpose()
+    xs = np.array([node_data[:,1]]).transpose()*1e3
+    ys =  np.array([node_data[:,2]]).transpose()*1e3
+    zs =  np.array([node_data[:,3]]).transpose()*1e3
+    k = np.concatenate((xs,ys,zs), axis=1)
     
     
-    
-
+    import random
     def f(x,y,z):
-        print(x/(1e3),y/(1e3),z/(1e3))
-        xq, yq, zq = np.meshgrid(x/(1e3),y/(1e3),z/(1e3))
-        vq = griddata(np.concatenate((xs,ys,zs), axis=1),stresses, (xq, yq, zq))
-        print(vq)
-        return vq
-
-    #f = RegularGridInterpolator((node_data[1], node_data[2], node_data[3]),stresses) 
+        if [x,y,z] in k:
+            i = k.tolist().index([x,y,z])
+            return stresses[i]
+        return random.random()
 
   
 
@@ -81,6 +77,7 @@ def plot(node_data, node_stress, dx, ds):
                                 colormap="Portland",
                                 show_colorbar=True,
                                 color_func=f,
+                                plot_edges=False,
                                 aspectratio=dict(x=1, y=(max(y)-min(y)) / 1691, z=(max(z)-min(z)) / 1691),
                                 )
 
