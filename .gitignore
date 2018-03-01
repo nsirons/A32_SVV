@@ -5,3 +5,5 @@
 *.json
 /.vs/*
 /main/*.html
+*.html
+data/*.csv

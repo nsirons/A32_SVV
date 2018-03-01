@@ -15,6 +15,14 @@ from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_in
 from deflections import get_deflections_func
 from tools import *
 
+case = 'LC1'
+Cases = {'R1': {'q': 0, 'p': 0, 'theta': 26*np.pi/180}, 'R2': {'q': 0, 'p': 0,'theta': -26*np.pi/180},
+         'LC1': {'q': 27.1e2, 'p': 37.9e3, 'theta': 26*np.pi/180}, 'LC2': {'q': 27.1e2, 'p': 37.9e3, 'theta': -26*np.pi/180}}
+#R1 - Upward rotation without aerodynamic and actuator loads
+#R2 - Downward rotation without aerodynamic and actuator loads
+#LC1 - Upward rotation with aerodynamic and actuator loads, ss specified in the assignment
+#LC2 - Downward rotation with aerodynamic and actuator loads
+
 # -- Geometry --
 C_a = 0.484  # chord length aileron
 l_a = 1.691  # span aileron
@@ -33,11 +41,11 @@ d_1 = 6.81e-2/2.54  # ver. displacement hinge 1
 d_3 = 20.3e-2/2.54  # ver. displacement hinge 3
 d_act1 = 0  # ? # iterative*
 d_act2 = 0  # ? # iterative*
-theta = 26 * np.pi/180  # Maximum upward deflection
+theta = Cases[case]['theta']  # Maximum upward deflection
 
 # -- Loads --
-P = 37.9e3  # load in actuator 2
-q = 27.1e2  # net aerodynamic load
+P = Cases[case]['p']  # load in actuator 2
+q = Cases[case]['q']   # net aerodynamic load
 
 # -- Material Property
 # source: http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=ma2024t3
@@ -166,8 +174,20 @@ def write_forces(fp, reaction_forces_dict):
     fp.write("-------------------------------------------------\n")
 
 
-def save_displacement(x,y,z):
-    np.savetxt('../data/displacement.csv', np.vstack((np.array(x), np.array(y), np.array(z))).T, delimiter=',')
+def save_displacement(x, y, z, case_name):
+    save_path = '../data/displacement{}.csv'.format(case_name)
+    np.savetxt(save_path, np.vstack((np.array(x), np.array(y), np.array(z))).T, delimiter=',')
+    print('Displacements are saved to : {} '.format(save_path))
+
+
+def save_reaction_force(Fy1, Fy2, Fy3, Fz1, Fz2, FzI, case_name):
+    data = np.array([[x_1, Fy1, Fz1],
+                              [x_2-x_a/2,0,FzI],
+                              [x_2, Fy2, Fz2],
+                              [x_3, Fy3, 0]])
+    save_path = '../data/reaction_force_{}.csv'.format(case_name)
+    np.savetxt(save_path, data, delimiter=',')
+    print('Internal forces are saved to {}'.format(save_path))
 
 def main(args):
     
@@ -198,6 +218,7 @@ def main(args):
         reaction_forces_dict = get_reaction_forces(I_zz, I_yy, I_zy)
 
     F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, K1, K2 = convert_reaction_forces_dict(reaction_forces_dict)
+    save_reaction_force(F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, case)
 
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
     defl_y, defl_z = get_deflections_func(x_1, x_2, x_3, x_a, E, I_zz, I_yy, I_zy, F_y1, F_z1, F_y2, F_z2, F_y3, F_zI, K1, K2, P, q)
