@@ -5,13 +5,12 @@ def read_node_loc(path):
     # Element label - X - Y - Z
     return np.genfromtxt(path, comments='*', delimiter=',', max_rows=3205 - 9, names=["index", "x", "y", "z"])
 
+def read_reaction_forces(path):
+    return np.genfromtxt(path, skip_header=3231, max_rows=3247-3231)
 
 def read_node_U(path):
     # node label - U Magnitude - Ux - Uy - Uz
     return np.genfromtxt(path, skip_header=19, usecols=(0, 5, 6, 7, 8), max_rows=3205 - 9)
-
-
-
 
 
 def read_node_stress(path):
@@ -33,13 +32,14 @@ path_stress = '../data/CRJ700n_SR2.rpt'
 node_data = read_node_loc(path_node)
 node_U = read_node_U(path_U)
 node_S = read_node_stress(path_stress)
-plotter(node_data, node_stress=None, node_U=node_U)
-# unique, counts = np.unique(node_S[:,0], return_counts=True)
-# print(node_S[1:4,:])
-# print(len(node_S))
-# print(list(filter(lambda x: x[1] > 1, zip(unique, counts))))
+
+unique, counts = np.unique(node_S[:,0], return_counts=True)
+node_S_upd = np.unique(np.array(list(map(lambda x: x if counts[int(x[0])-1] == 1 else np.array([x[0], 0]), node_S))), axis=0)
+plotter(node_data, node_stress=node_S_upd, node_U=node_U, show_stress=True)
 
 
+def check_reaction_forces():
+    pass
 
 def diff(node_data, node_U):
     # run main for specific points
