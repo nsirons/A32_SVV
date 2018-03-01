@@ -12,6 +12,7 @@ from math import *
 import matplotlib.pyplot as plt
 from aileron import aileron
 from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia, calculate_zbar
+from deflections import get_deflections_func
 from tools import *
 
 # -- Geometry --
@@ -91,7 +92,9 @@ def get_reaction_forces(I_zz, I_yy, I_zy):
         'Fy2': x[2][0],
         'Fz2': x[3][0],
         'Fy3': x[4][0],
-        'FzI': x[5][0]
+        'FzI': x[5][0],
+        'K1' : x[6][0],
+        'K2' : x[7][0]
         }
     return reaction_forces_dict
 
@@ -112,6 +115,9 @@ def get_von_misses(sigmaz, tauyz):
         sigmamax.append(sqrt(1/2*((sigmax-sigmay)**2 + (sigmay-sigmaz[i])**2 + (sigmaz[i]-sigmax)**2)) + sqrt(3*(tauxy**2 + tauyz[i]**2 + tauzx**2)))
     return sigmamax
 
+# def get_aileron_deflections_functions():
+#
+#     return deflection_z, deflection_y
 
 def plot_figure(xpos,ypos, zpos, smax):
 
@@ -163,6 +169,9 @@ def write_forces(fp, reaction_forces_dict):
     fp.write("-------------------------------------------------\n")
 
 
+def save_displacement(x,y,z):
+    np.savetxt('../data/displacement.csv', np.vstack((np.array(x), np.array(y), np.array(z))).T, delimiter=',')
+
 def main(args):
     
     parser = argparse.ArgumentParser(description="SVV Program 2018 A32")
@@ -191,22 +200,23 @@ def main(args):
     else:
         reaction_forces_dict = get_reaction_forces(I_zz, I_yy, I_zy)
 
-    F_y1, F_y2, F_y3, F_z1, F_z2, F_zI = convert_reaction_forces_dict(reaction_forces_dict)
+    F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, K1, K2 = convert_reaction_forces_dict(reaction_forces_dict)
 
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
+    defl_y, defl_z = get_deflections_func(x_1, x_2, x_3, x_a, E, I_zz, I_yy, I_zy, F_y1, F_z1, F_y2, F_z2, F_y3, F_zI, K1, K2, P, q)
 
-    x = []
-    y = []
-    y1 = []
-    for i in np.arange(0,l_a, 0.001):
-        x.append(i)
-        y.append(F_z(i))
-        y1.append(M_z(i))
+    #x = []
+    #y = []
+    #y1 = []
+    #for i in np.arange(0,l_a, 0.001):
+    #    x.append(i)
+    #    y.append(F_y(i))
+    #    y1.append(M_y(i))
 
-    plt.plot(x,y)
-    plt.plot(x,y1)
+    #plt.plot(x,y)
+    #plt.plot(x,y1)
 
-    plt.show()
+    #plt.show()
 
     #start loop over length
 
@@ -216,6 +226,9 @@ def main(args):
     sigma_z_lst = []
     tau_yz_lst = []
     sigma_max_lst = []
+
+    defl_y_lst = []
+    defl_z_lst = []
 
     discretized_skin_pos = discretize_skin(n) 
     z_pos_f, y_pos_f = [i[0] for i in discretized_skin_pos], [i[1] for i in discretized_skin_pos]
@@ -243,7 +256,9 @@ def main(args):
         
 
         #Deflection
-        #deflection_z, deflection_y = get_aileron_deflections()
+        # deflection_z, deflection_y = get_aileron_deflections()
+        # defl_y_lst.append(defl_y(x_pos[0]))
+        # defl_z_lst.append(defl_z(x_pos[0]))
             
         #Store local section results
         x_lst.append(x_pos)
@@ -251,7 +266,8 @@ def main(args):
         z_lst.append(z_pos)
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
-        sigma_max_lst.append(sigma_max)
+        sigma_max_lst.append(sigma_z)
+
 
 
     plot_figure(x_lst, y_lst, z_lst, tau_yz_lst)
@@ -265,8 +281,11 @@ def main(args):
     write_program_settings(arguments.out)
     write_section_properties(arguments.out, I_zz, I_yy, I_zy)
     write_forces(arguments.out, reaction_forces_dict)
-
-   
+    defl_z_lst = [defl_z(i) for i in np.linspace(0, l_a, 1000)]
+    plt.plot(np.linspace(0, l_a, 1000), defl_z_lst)
+    print(defl_z(x_1))
+    print(defl_z(x_2))
+    plt.show()
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

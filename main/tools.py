@@ -25,12 +25,19 @@ def convert_reaction_forces_dict(dict):
     F_z1 = dict['Fz1']
     F_z2 = dict['Fz2']
     F_zI = dict['FzI']
-
-    return F_y1, F_y2, F_y3, F_z1, F_z2, F_zI
+    K1 = dict['K1']
+    K2 = dict['K2']
+    return F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, K1, K2
 
 
 def heaviside(x):
     if x >= 0:
+        return 1
+    else:
+        return 0
+
+def heaviside_defl(x):
+    if x > 0:
         return 1
     else:
         return 0
