@@ -174,10 +174,12 @@ def write_forces(fp, reaction_forces_dict):
     fp.write("-------------------------------------------------\n")
 
 
-def save_displacement(x, y, z, case_name):
-    save_path = '../data/displacement{}.csv'.format(case_name)
-    np.savetxt(save_path, np.vstack((np.array(x), np.array(y), np.array(z))).T, delimiter=',')
-    print('Displacements are saved to : {} '.format(save_path))
+def save_deflections(x, y, z, defl_y_lst, defl_z_lst, case_name):
+    save_path = '../data/deflection_{}.csv'.format(case_name)
+    print(max([max(i) for i in y]))
+    np.savetxt(save_path, np.vstack((np.array(x).flatten(), np.array(y).flatten(), np.array(z).flatten(),
+                                     np.array(defl_y_lst).flatten(), np.array(defl_z_lst).flatten())).T, delimiter=',')
+    print('Deflections are saved to : {} '.format(save_path))
 
 
 def save_reaction_force(Fy1, Fy2, Fy3, Fz1, Fz2, FzI, case_name):
@@ -188,6 +190,14 @@ def save_reaction_force(Fy1, Fy2, Fy3, Fz1, Fz2, FzI, case_name):
     save_path = '../data/reaction_force_{}.csv'.format(case_name)
     np.savetxt(save_path, data, delimiter=',')
     print('Internal forces are saved to {}'.format(save_path))
+
+
+def save_stress(x, y, z, mises, case_name):
+    save_path = '../data/stress_{}.csv'.format(case_name)
+    np.savetxt(save_path, np.vstack((np.array(x).flatten(), np.array(y).flatten(), np.array(z).flatten(),
+                                     np.array(mises).flatten())).T, delimiter=',')
+    print('Stresses are saved to : {} '.format(save_path))
+
 
 def main(args):
     
@@ -255,7 +265,7 @@ def main(args):
     rotated_discretized_skin_pos = [ [tmp[1][i],tmp[0][i]] for i in range(len(tmp[0]))]
 
     for current_distance in np.arange(0, l_a+dx, dx):
-        print(current_distance) 
+        print(current_distance)
 
         #Bending stresses
         sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
@@ -277,9 +287,9 @@ def main(args):
         z_pos = z_pos_f
 
         y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta)
-        
-        y_pos = (np.array(y_pos) + deflection_y).tolist()
-        z_pos = (np.array(z_pos) + deflection_z).tolist()
+
+        y_pos = (np.array(y_pos) + 0*deflection_y).tolist()
+        z_pos = (np.array(z_pos) + 0*deflection_z).tolist()
 
 
         
@@ -292,6 +302,8 @@ def main(args):
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
         sigma_max_lst.append(sigma_z)
+        defl_y_lst.append((n+2)*[deflection_y])
+        defl_z_lst.append((n+2)*[deflection_z])
 
 
 
@@ -306,6 +318,8 @@ def main(args):
     write_program_settings(arguments.out)
     write_section_properties(arguments.out, I_zz, I_yy, I_zy)
     write_forces(arguments.out, reaction_forces_dict)
+    save_deflections(x_lst, y_lst, z_lst, defl_y_lst, defl_z_lst, case)
+    save_stress(x_lst, y_lst, z_lst, sigma_max_lst, case)
     #defl_y_lst = [defl_y(i)+d_1 for i in np.linspace(0, l_a, 1000)]
     #plt.plot(np.linspace(0, l_a, 1000), defl_y_lst)
     #print(defl_z(x_1), d_1)

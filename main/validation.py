@@ -42,6 +42,26 @@ def check_reaction_forces(path_forces_valid, path_forces_sim):
         print('{:.3f}\t-\t{:.3f}\t=\t{:.3f}\t = {}%'.format(sim, val, sim-val, round(abs((sim-val)/val)*100, 2)))
 
 
+def check_deflections(path_node, node_U, path_deflection):
+    # idea is to compare deflections with closes node
+    defl_data = np.genfromtxt(path_deflection, delimiter=',')
+    node_data = np.genfromtxt(path_node, comments='*', delimiter=',', max_rows=3205 - 9)
+    defl_error = []
+    for point in defl_data:
+        closest_point = node_data[np.argmin(np.sum((node_data[:,1:] - point[:3]*1e3)**2, axis=1)), :]
+        defl_error.append((np.abs(point[3:]*1e3 -node_U[int(closest_point[0]-1)][-2:])/node_U[int(closest_point[0]-1)][-2:]*100))
+    return defl_error
+
+
+def check_stress(path_node, node_S, path_stress):
+    stress_data = np.genfromtxt(path_stress, delimiter=',')
+    node_data = np.genfromtxt(path_node, comments='*', delimiter=',', max_rows=3205 - 9)
+    stress_error = []
+    for point in stress_data:
+        closest_point = node_data[np.argmin(np.sum((node_data[:,1:] - point[:3]*1e3)**2, axis=1)), :]
+        stress_data.append((np.abs(point[3:]*1e3 -node_S[int(closest_point[0]-1)][-2:])/node_S[int(closest_point[0]-1)][1]*100))
+    return stress_error
+
 cases = ['R1', 'R2', 'LC1', 'LC2']
 path_node = '../data/CRJ700n.inp'
 node_data = read_node_loc(path_node)
@@ -50,6 +70,7 @@ node_data = read_node_loc(path_node)
 
 for case in cases:
     path_forces_sim = '../data/reaction_force_{}.csv'.format(case)
+    path_deflection = '../data/deflection_{}.csv'.format(case)
 
     if 'reaction_force_{}.csv'.format(case) in os.listdir('../data'):
         path_U = '../data/CRJ700n_U{}.rpt'.format(case)
@@ -61,6 +82,8 @@ for case in cases:
 
         print('Case : {}'.format(case))
         check_reaction_forces(path_U, path_forces_sim)
+        check_deflections(path_node, node_U, path_deflection)
+        check_stress(path_node, node_S, path_stress)
         print('----------------------------\n')
     else:
         print('----------------------------')
