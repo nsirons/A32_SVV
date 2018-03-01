@@ -45,10 +45,10 @@ E = 73.1e9  # Young modulus aluminium 2024-T3
 G = 28.e9  # Shear modulus aluminium 2024-T3
 
 # Calculate normal stress along the cross-sectional area and x direction
-d = 10 #discretization along span
+d = 20 #discretization along span
 x = 0 #initial x-coordinate
 dx = l_a/(d+1) #steps along span
-n = 10  # number of discretized points
+n = 20  # number of discretized points
 x_points = []
 y_points = []
 z_points = []
@@ -115,9 +115,6 @@ def get_von_misses(sigmaz, tauyz):
         sigmamax.append(sqrt(1/2*((sigmax-sigmay)**2 + (sigmay-sigmaz[i])**2 + (sigmaz[i]-sigmax)**2)) + sqrt(3*(tauxy**2 + tauyz[i]**2 + tauzx**2)))
     return sigmamax
 
-# def get_aileron_deflections_functions():
-#
-#     return deflection_z, deflection_y
 
 def plot_figure(xpos,ypos, zpos, smax):
 
@@ -247,6 +244,12 @@ def main(args):
         #Von Misses
         sigma_max = get_von_misses(sigma_z, tau_yz)  
 
+
+        #Deflection
+        #correct y such that deflection at h2 is zero
+        deflection_y = defl_y(current_distance) + d_1
+        deflection_z = defl_z(current_distance)
+
         #Positions
         x_pos = [current_distance for i in range(len(y_pos_f))]
         y_pos = y_pos_f
@@ -254,11 +257,12 @@ def main(args):
 
         y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta)
         
+        y_pos = (np.array(y_pos) + deflection_y).tolist()
+        z_pos = (np.array(z_pos) + deflection_z).tolist()
 
-        #Deflection
-        # deflection_z, deflection_y = get_aileron_deflections()
-        # defl_y_lst.append(defl_y(x_pos[0]))
-        # defl_z_lst.append(defl_z(x_pos[0]))
+
+        
+
             
         #Store local section results
         x_lst.append(x_pos)
@@ -270,7 +274,7 @@ def main(args):
 
 
 
-    plot_figure(x_lst, y_lst, z_lst, tau_yz_lst)
+    plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
 
 
     #plt.plot([x[1] for x in x_lst], [s[1] for s in sigma_z_lst])
@@ -281,11 +285,11 @@ def main(args):
     write_program_settings(arguments.out)
     write_section_properties(arguments.out, I_zz, I_yy, I_zy)
     write_forces(arguments.out, reaction_forces_dict)
-    defl_z_lst = [defl_z(i) for i in np.linspace(0, l_a, 1000)]
-    plt.plot(np.linspace(0, l_a, 1000), defl_z_lst)
-    print(defl_z(x_1))
-    print(defl_z(x_2))
-    plt.show()
+    #defl_y_lst = [defl_y(i)+d_1 for i in np.linspace(0, l_a, 1000)]
+    #plt.plot(np.linspace(0, l_a, 1000), defl_y_lst)
+    #print(defl_z(x_1), d_1)
+    #print(defl_z(x_3), d_3)
+    #plt.show()
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

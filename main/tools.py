@@ -8,7 +8,9 @@ def generate_reaction_forces_file(fp):
         'Fy2': 0,
         'Fz2': 0,
         'Fy3': 0,
-        'FzI': 0
+        'FzI': 0,
+        'K1': 0,
+        'K2': 0,
         }
 
     json.dump(reaction_forces, fp)
