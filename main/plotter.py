@@ -16,9 +16,10 @@ def gen_mesh(x,y):
 
 
 def plot(node_data, node_stress, dx, ds):
-
+    kkkk = node_stress
    #+1 from point at TE
-    ds = ds+2
+    dx = dx + 2
+    ds = ds + 2
     u = np.arange(0, ds, 1)
     v = np.arange(0, dx, 1)
 
@@ -51,20 +52,18 @@ def plot(node_data, node_stress, dx, ds):
     simplices = tri.simplices
 
     nodes = len(node_data)
-    stresses = node_stress[:,1]
-    xs = np.array([node_data[:,1]]).transpose()
-    ys =  np.array([node_data[:,2]]).transpose()
-    zs =  np.array([node_data[:,3]]).transpose()
+    stresses = node_stress[:,1].transpose()
+    node_n = np.array([node_data[:,0]]).transpose()
+    xs = np.array([node_data[:,1]]).transpose()*1e3
+    ys =  np.array([node_data[:,2]]).transpose()*1e3
+    zs =  np.array([node_data[:,3]]).transpose()*1e3
     
-    
-    
+    ccc= np.concatenate((xs,ys,zs), axis=1)
 
-    def f(x,y,z):
-        print(x/(1e3),y/(1e3),z/(1e3))
-        xq, yq, zq = np.meshgrid(x/(1e3),y/(1e3),z/(1e3))
-        vq = griddata(np.concatenate((xs,ys,zs), axis=1),stresses, (xq, yq, zq))
-        print(vq)
-        return vq
+    def k(x,y,z):
+        if np.array([x,y,z] in ccc):
+            return stresses[ccc.tolist().index([x,y,z])]
+        return random.random()
 
     #f = RegularGridInterpolator((node_data[1], node_data[2], node_data[3]),stresses) 
 
@@ -80,7 +79,7 @@ def plot(node_data, node_stress, dx, ds):
                                 title="aileron",
                                 colormap="Portland",
                                 show_colorbar=True,
-                                color_func=f,
+                                color_func=k,
                                 aspectratio=dict(x=1, y=(max(y)-min(y)) / 1691, z=(max(z)-min(z)) / 1691),
                                 )
 

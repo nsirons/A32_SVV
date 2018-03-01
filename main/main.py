@@ -44,10 +44,10 @@ E = 73.1e9  # Young modulus aluminium 2024-T3
 G = 28.e9  # Shear modulus aluminium 2024-T3
 
 # Calculate normal stress along the cross-sectional area and x direction
-d = 15 #discretization along span
+d = 50 #discretization along span
 x = 0 #initial x-coordinate
 dx = l_a/(d+1) #steps along span
-n = 15  # number of discretized points
+n = 50  # number of discretized points
 x_points = []
 y_points = []
 z_points = []
@@ -129,9 +129,7 @@ def plot_figure(xpos,ypos, zpos, smax):
 
     plot(loc, stress, d, n)
     
-    
-    
-
+ 
 
 def write_header(fp):
     fp.write("-------------------------------------------------\n")
@@ -223,14 +221,14 @@ def main(args):
     tmp = rotate_points_yz(y_pos_f, z_pos_f, 0, 0, theta)
     rotated_discretized_skin_pos = [ [tmp[1][i],tmp[0][i]] for i in range(len(tmp[0]))]
 
-    for current_distance in np.arange(0, l_a, dx):
+    for current_distance in np.arange(0, l_a+dx, dx):
         print(current_distance) 
 
         #Bending stresses
         sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
          
         #Shear stresses
-        tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
+        tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q, F_y, F_z)
         
         #Von Misses
         sigma_max = get_von_misses(sigma_z, tau_yz)  
@@ -252,13 +250,12 @@ def main(args):
         z_lst.append(z_pos)
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
-        sigma_max_lst.append(sigma_z)
+        sigma_max_lst.append(sigma_max)
+    #print(tau_yz_lst)
+    plot_figure(x_lst, y_lst, z_lst, tau_yz_lst)
 
-
-
-    plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
-
-
+#-357.27063340391885
+#-357.27063340391885
     #plt.plot([x[1] for x in x_lst], [s[1] for s in sigma_z_lst])
     #plt.show()
 
