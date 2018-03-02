@@ -2,7 +2,7 @@
 from reaction_forces import reaction_forces
 from bendingstresses import find_bending_stresses, discretize_skin
 from shearstressestorshe import find_shear_stresses
-from forcesmomentsfunc import int_shear, int_moment
+from forcesmomentsfunc import int_shear, int_moment, int_moment_I
 from plotter import plotter, plot
 import numpy as np
 import logging
@@ -12,6 +12,7 @@ from math import *
 import matplotlib.pyplot as plt
 from aileron import aileron
 from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia, calculate_zbar
+from deflections import get_deflections_func
 from tools import *
 
 # -- Geometry --
@@ -44,10 +45,17 @@ E = 73.1e9  # Young modulus aluminium 2024-T3
 G = 28.e9  # Shear modulus aluminium 2024-T3
 
 # Calculate normal stress along the cross-sectional area and x direction
+<<<<<<< HEAD
 d = 50 #discretization along span
 x = 0 #initial x-coordinate
 dx = l_a/(d+1) #steps along span
 n = 50  # number of discretized points
+=======
+d = 20 #discretization along span
+x = 0 #initial x-coordinate
+dx = l_a/(d+1) #steps along span
+n = 20  # number of discretized points
+>>>>>>> 4a3b1aa124c60f94cb49d8a5fdd62d7d87c88a87
 x_points = []
 y_points = []
 z_points = []
@@ -91,15 +99,17 @@ def get_reaction_forces(I_zz, I_yy, I_zy):
         'Fy2': x[2][0],
         'Fz2': x[3][0],
         'Fy3': x[4][0],
-        'FzI': x[5][0]
+        'FzI': x[5][0],
+        'K1' : x[6][0],
+        'K2' : x[7][0]
         }
     return reaction_forces_dict
 
 def get_moment_functions(reaction_forces_dict):
     sf_y = lambda x: -reaction_forces_dict['Fy1']*heaviside(x-x_1) + -reaction_forces_dict['Fy2'] * heaviside(x-x_2) + -reaction_forces_dict['Fy3']*heaviside(x-x_3) + q*x
     sf_z = lambda x: reaction_forces_dict['Fz1']*heaviside(x-x_1) + reaction_forces_dict['FzI'] * heaviside(x-(x_2 - x_a/2)) + reaction_forces_dict['Fz2'] * heaviside(x-x_2) - P*heaviside(x-(x_2 + x_a/2))
-    m_z = int_moment(sf_z)
-    m_y = int_moment(sf_y)
+    m_z = int_moment_I(sf_z, l_a)
+    m_y = int_moment_I(sf_y, l_a)
     return (sf_y, sf_z, m_y, m_z)
     
 def get_von_misses(sigmaz, tauyz):
@@ -161,6 +171,9 @@ def write_forces(fp, reaction_forces_dict):
     fp.write("-------------------------------------------------\n")
 
 
+def save_displacement(x,y,z):
+    np.savetxt('../data/displacement.csv', np.vstack((np.array(x), np.array(y), np.array(z))).T, delimiter=',')
+
 def main(args):
     
     parser = argparse.ArgumentParser(description="SVV Program 2018 A32")
@@ -189,9 +202,10 @@ def main(args):
     else:
         reaction_forces_dict = get_reaction_forces(I_zz, I_yy, I_zy)
 
-    F_y1, F_y2, F_y3, F_z1, F_z2, F_zI = convert_reaction_forces_dict(reaction_forces_dict)
+    F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, K1, K2 = convert_reaction_forces_dict(reaction_forces_dict)
 
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
+    defl_y, defl_z = get_deflections_func(x_1, x_2, x_3, x_a, E, I_zz, I_yy, I_zy, F_y1, F_z1, F_y2, F_z2, F_y3, F_zI, K1, K2, P, q)
 
     #x = []
     #y = []
@@ -215,6 +229,9 @@ def main(args):
     tau_yz_lst = []
     sigma_max_lst = []
 
+    defl_y_lst = []
+    defl_z_lst = []
+
     discretized_skin_pos = discretize_skin(n) 
     z_pos_f, y_pos_f = [i[0] for i in discretized_skin_pos], [i[1] for i in discretized_skin_pos]
 
@@ -228,10 +245,20 @@ def main(args):
         sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
          
         #Shear stresses
+<<<<<<< HEAD
         tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q, F_y, F_z)
         
+=======
+        tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
+>>>>>>> 4a3b1aa124c60f94cb49d8a5fdd62d7d87c88a87
         #Von Misses
         sigma_max = get_von_misses(sigma_z, tau_yz)  
+
+
+        #Deflection
+        #correct y such that deflection at h2 is zero
+        deflection_y = defl_y(current_distance) + d_1
+        deflection_z = defl_z(current_distance)
 
         #Positions
         x_pos = [current_distance for i in range(len(y_pos_f))]
@@ -240,9 +267,12 @@ def main(args):
 
         y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta)
         
+        y_pos = (np.array(y_pos) + deflection_y).tolist()
+        z_pos = (np.array(z_pos) + deflection_z).tolist()
 
-        #Deflection
-        #deflection_z, deflection_y = get_aileron_deflections()
+
+        
+
             
         #Store local section results
         x_lst.append(x_pos)
@@ -264,8 +294,11 @@ def main(args):
     write_program_settings(arguments.out)
     write_section_properties(arguments.out, I_zz, I_yy, I_zy)
     write_forces(arguments.out, reaction_forces_dict)
-
-   
+    #defl_y_lst = [defl_y(i)+d_1 for i in np.linspace(0, l_a, 1000)]
+    #plt.plot(np.linspace(0, l_a, 1000), defl_y_lst)
+    #print(defl_z(x_1), d_1)
+    #print(defl_z(x_3), d_3)
+    #plt.show()
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
