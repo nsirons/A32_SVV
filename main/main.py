@@ -14,7 +14,19 @@ from aileron import aileron
 from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia, calculate_zbar
 from deflections import get_deflections_func
 from tools import *
+<<<<<<< HEAD
 from rateoftwist import rate_of_twist
+=======
+
+case = 'LC1'
+Cases = {'R1': {'q': 0, 'p': 0, 'theta': 26*np.pi/180}, 'R2': {'q': 0, 'p': 0,'theta': -26*np.pi/180},
+         'LC1': {'q': 27.1e2, 'p': 37.9e3, 'theta': 26*np.pi/180}, 'LC2': {'q': 27.1e2, 'p': 37.9e3, 'theta': -26*np.pi/180}}
+#R1 - Upward rotation without aerodynamic and actuator loads
+#R2 - Downward rotation without aerodynamic and actuator loads
+#LC1 - Upward rotation with aerodynamic and actuator loads, ss specified in the assignment
+#LC2 - Downward rotation with aerodynamic and actuator loads
+
+>>>>>>> 3a31677e3fe8e91062e38b848c2f61ad03081f6f
 # -- Geometry --
 C_a = 0.484  # chord length aileron
 l_a = 1.691  # span aileron
@@ -33,11 +45,11 @@ d_1 = 6.81e-2/2.54  # ver. displacement hinge 1
 d_3 = 20.3e-2/2.54  # ver. displacement hinge 3
 d_act1 = 0  # ? # iterative*
 d_act2 = 0  # ? # iterative*
-theta = 26 * np.pi/180  # Maximum upward deflection
+theta = Cases[case]['theta']  # Maximum upward deflection
 
 # -- Loads --
-P = 37.9e3  # load in actuator 2
-q = 27.1e2  # net aerodynamic load
+P = Cases[case]['p']  # load in actuator 2
+q = Cases[case]['q']   # net aerodynamic load
 
 # -- Material Property
 # source: http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=ma2024t3
@@ -171,8 +183,30 @@ def write_forces(fp, reaction_forces_dict):
     fp.write("-------------------------------------------------\n")
 
 
-def save_displacement(x,y,z):
-    np.savetxt('../data/displacement.csv', np.vstack((np.array(x), np.array(y), np.array(z))).T, delimiter=',')
+def save_deflections(x, y, z, defl_y_lst, defl_z_lst, case_name):
+    save_path = '../data/deflection_{}.csv'.format(case_name)
+    print(max([max(i) for i in y]))
+    np.savetxt(save_path, np.vstack((np.array(x).flatten(), np.array(y).flatten(), np.array(z).flatten(),
+                                     np.array(defl_y_lst).flatten(), np.array(defl_z_lst).flatten())).T, delimiter=',')
+    print('Deflections are saved to : {} '.format(save_path))
+
+
+def save_reaction_force(Fy1, Fy2, Fy3, Fz1, Fz2, FzI, case_name):
+    data = np.array([[x_1, Fy1, Fz1],
+                              [x_2-x_a/2,0,FzI],
+                              [x_2, Fy2, Fz2],
+                              [x_3, Fy3, 0]])
+    save_path = '../data/reaction_force_{}.csv'.format(case_name)
+    np.savetxt(save_path, data, delimiter=',')
+    print('Internal forces are saved to {}'.format(save_path))
+
+
+def save_stress(x, y, z, mises, case_name):
+    save_path = '../data/stress_{}.csv'.format(case_name)
+    np.savetxt(save_path, np.vstack((np.array(x).flatten(), np.array(y).flatten(), np.array(z).flatten(),
+                                     np.array(mises).flatten())).T, delimiter=',')
+    print('Stresses are saved to : {} '.format(save_path))
+
 
 def main(args):
     
@@ -203,6 +237,7 @@ def main(args):
         reaction_forces_dict = get_reaction_forces(I_zz, I_yy, I_zy)
 
     F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, K1, K2 = convert_reaction_forces_dict(reaction_forces_dict)
+    save_reaction_force(F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, case)
 
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
     defl_y, defl_z = get_deflections_func(x_1, x_2, x_3, x_a, E, I_zz, I_yy, I_zy, F_y1, F_z1, F_y2, F_z2, F_y3, F_zI, K1, K2, P, q)
@@ -239,7 +274,7 @@ def main(args):
     rotated_discretized_skin_pos = [ [tmp[1][i],tmp[0][i]] for i in range(len(tmp[0]))]
 
     for current_distance in np.arange(0, l_a+dx, dx):
-        print(current_distance) 
+        print(current_distance)
 
         #Bending stresses
         sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
@@ -266,9 +301,9 @@ def main(args):
         z_pos = z_pos_f
 
         y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta)
-        
-        y_pos = (np.array(y_pos) + deflection_y).tolist()
-        z_pos = (np.array(z_pos) + deflection_z).tolist()
+
+        y_pos = (np.array(y_pos) + 0*deflection_y).tolist()
+        z_pos = (np.array(z_pos) + 0*deflection_z).tolist()
 
 
         
@@ -280,9 +315,20 @@ def main(args):
         z_lst.append(z_pos)
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
+<<<<<<< HEAD
         sigma_max_lst.append(sigma_max)
     #print(tau_yz_lst)
     plot_figure(x_lst, y_lst, z_lst, tau_yz_lst)
+=======
+        sigma_max_lst.append(sigma_z)
+        defl_y_lst.append((n+2)*[deflection_y])
+        defl_z_lst.append((n+2)*[deflection_z])
+
+
+
+    plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
+
+>>>>>>> 3a31677e3fe8e91062e38b848c2f61ad03081f6f
 
 #-357.27063340391885
 #-357.27063340391885
@@ -294,6 +340,8 @@ def main(args):
     write_program_settings(arguments.out)
     write_section_properties(arguments.out, I_zz, I_yy, I_zy)
     write_forces(arguments.out, reaction_forces_dict)
+    save_deflections(x_lst, y_lst, z_lst, defl_y_lst, defl_z_lst, case)
+    save_stress(x_lst, y_lst, z_lst, sigma_max_lst, case)
     #defl_y_lst = [defl_y(i)+d_1 for i in np.linspace(0, l_a, 1000)]
     #plt.plot(np.linspace(0, l_a, 1000), defl_y_lst)
     #print(defl_z(x_1), d_1)
