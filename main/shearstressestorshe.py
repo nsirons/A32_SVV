@@ -65,7 +65,7 @@ def find_shear_stresses(x, discretized_skin_pos, la, x1, x2, x3, xa, d1, d3, Ca,
              - P*(get_deflection_y(x_position, moment_y, moment_z, Izz, Iyy, Izy) - (get_deflection_y((x_position + xa/2), moment_y, moment_z, Izz, Iyy, Izy) + ha/sqrt(2) *cos(radians(135)+theta)))*heaviside(x - (x2 + xa/2))
 
         Tvar = -(q23b+q31b)*(ha/2*sin(atan((Ca-ha/2)/(ha/2))))-2*q12_Ib*ha/2
-
+        print(Tvar)
         dthetadxc1 = (q12_Ib/tsk + q21b/tsp)/(2*A1*G)
  
         dthetadxc2 = (q23b/tsk + q31b/tsp + q12_IIb/tsp)/(2*A2*G)
