@@ -3,19 +3,12 @@ from math import *
 import numpy as np
 from bendingstresses import discretize_skin
 from tools import heaviside
+from bendingdeflection import get_deflection_y
 
 def rate_of_twist(x, rotated_discretized_skin_pos, la, x1, x2, x3, xa, d1, d3, Ca, ha, G,
                           tsp, tsk, dact1, dact2, Izz, Iyy, Izy, ybar, zbar,
                           theta, Fz2, Fy1, Fy2, Fy3, Fx1, Fx3, Fz1,
                         FzI, P, q, S_y, S_z):
-
-    #to be replaced for deflection formula
-    def def_y(x):
-        if x>=0 and x<=x2:
-            y = d1-(d1/(x2-0))*(x)
-        elif x>x2 and x<=la:
-            y = (d3/(la-x2))*(x-x2)
-        return y
 
     #parameter simplifying formula
     c = sqrt((Ca-ha/2)**2+(ha/2)**2)
@@ -59,10 +52,10 @@ def rate_of_twist(x, rotated_discretized_skin_pos, la, x1, x2, x3, xa, d1, d3, C
 
         #b matrix (internal torque, torque due to variable shear flows, rate of twist due to variable shear flows (in cell 1 & 2))
         T = +q*cos(theta)*((Ca/4 - ha/2) * cos(theta))*x\
-             + Fz1*(d1- def_y(x))*heaviside(x-x1) \
-             + FzI*((def_y(x2 - xa/2) + ha/sqrt(2) *cos(radians(135)+theta) ) - def_y(x))*heaviside(x - (x2 - xa/2)) \
-             + Fz2 * (0 - def_y(x) )*heaviside(x-x2) \
-             + P*(def_y(x) - (def_y(x2 + xa/2) + ha/sqrt(2) *cos(radians(135)+theta)))*heaviside(x - (x2 + xa/2)) 
+             + Fz1*(d1- get_deflection_y(x_position, moment_y, moment_z, Izz, Iyy, Izy))*heaviside(x-x1) \
+             + FzI*((get_deflection_y((x_position - xa/2), moment_y, moment_z, Izz, Iyy, Izy) + ha/sqrt(2) *cos(radians(135)+theta) ) - get_deflection_y(x_position, moment_y, moment_z, Izz, Iyy, Izy))*heaviside(x - (x2 - xa/2)) \
+             + Fz2 * (0 - get_deflection_y(x_position, moment_y, moment_z, Izz, Iyy, Izy))*heaviside(x-x2) \
+             - P*(get_deflection_y(x_position, moment_y, moment_z, Izz, Iyy, Izy) - (get_deflection_y((x_position + xa/2), moment_y, moment_z, Izz, Iyy, Izy) + ha/sqrt(2) *cos(radians(135)+theta)))*heaviside(x - (x2 + xa/2))
 
         Tvar = -(q23b+q31b)*(ha/2*sin(atan((Ca-ha/2)/(ha/2))))-2*q12_Ib*ha/2
 
@@ -74,6 +67,7 @@ def rate_of_twist(x, rotated_discretized_skin_pos, la, x1, x2, x3, xa, d1, d3, C
                        [dthetadxc1],
                        [dthetadxc2]])
 
+        #solving the matrix, soln matrix is qI, qII (constants for cells) and dthetadx
         sol=np.linalg.solve(A,b)
 
     return float(degrees(sol[2]))

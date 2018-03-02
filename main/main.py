@@ -12,11 +12,9 @@ from math import *
 import matplotlib.pyplot as plt
 from aileron import aileron
 from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia, calculate_zbar
-from deflections import get_deflections_func
+#from deflections import get_deflection
 from tools import *
-<<<<<<< HEAD
 from rateoftwist import rate_of_twist
-=======
 
 case = 'LC1'
 Cases = {'R1': {'q': 0, 'p': 0, 'theta': 26*np.pi/180}, 'R2': {'q': 0, 'p': 0,'theta': -26*np.pi/180},
@@ -26,7 +24,6 @@ Cases = {'R1': {'q': 0, 'p': 0, 'theta': 26*np.pi/180}, 'R2': {'q': 0, 'p': 0,'t
 #LC1 - Upward rotation with aerodynamic and actuator loads, ss specified in the assignment
 #LC2 - Downward rotation with aerodynamic and actuator loads
 
->>>>>>> 3a31677e3fe8e91062e38b848c2f61ad03081f6f
 # -- Geometry --
 C_a = 0.484  # chord length aileron
 l_a = 1.691  # span aileron
@@ -57,17 +54,10 @@ E = 73.1e9  # Young modulus aluminium 2024-T3
 G = 28.e9  # Shear modulus aluminium 2024-T3
 
 # Calculate normal stress along the cross-sectional area and x direction
-<<<<<<< HEAD
 d = 50 #discretization along span
 x = 0 #initial x-coordinate
 dx = l_a/(d+1) #steps along span
 n = 50  # number of discretized points
-=======
-d = 20 #discretization along span
-x = 0 #initial x-coordinate
-dx = l_a/(d+1) #steps along span
-n = 20  # number of discretized points
->>>>>>> 4a3b1aa124c60f94cb49d8a5fdd62d7d87c88a87
 x_points = []
 y_points = []
 z_points = []
@@ -280,12 +270,8 @@ def main(args):
         sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
          
         #Shear stresses
-<<<<<<< HEAD
         tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q, F_y, F_z)
         
-=======
-        tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
->>>>>>> 4a3b1aa124c60f94cb49d8a5fdd62d7d87c88a87
         #Von Misses
         sigma_max = get_von_misses(sigma_z, tau_yz)  
 
@@ -315,20 +301,14 @@ def main(args):
         z_lst.append(z_pos)
         sigma_z_lst.append(sigma_z)
         tau_yz_lst.append(tau_yz)
-<<<<<<< HEAD
-        sigma_max_lst.append(sigma_max)
-    #print(tau_yz_lst)
-    plot_figure(x_lst, y_lst, z_lst, tau_yz_lst)
-=======
         sigma_max_lst.append(sigma_z)
         defl_y_lst.append((n+2)*[deflection_y])
         defl_z_lst.append((n+2)*[deflection_z])
+    
 
-
-
+    print(tau_yz_lst)
     plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
 
->>>>>>> 3a31677e3fe8e91062e38b848c2f61ad03081f6f
 
 #-357.27063340391885
 #-357.27063340391885
