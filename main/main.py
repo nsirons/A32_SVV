@@ -14,7 +14,7 @@ from aileron import aileron
 from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_inertia, calculate_zbar
 from deflections import get_deflections_func
 from tools import *
-
+from rateoftwist import rate_of_twist
 # -- Geometry --
 C_a = 0.484  # chord length aileron
 l_a = 1.691  # span aileron

@@ -33,9 +33,7 @@ def plot(node_data, node_stress, dx, ds):
     y=[]
     z=[]
 
-    xxx = u + v
 
-    print(node_data)
 
     for i, j in zip(u,v):
         xx = i + j
@@ -52,20 +50,19 @@ def plot(node_data, node_stress, dx, ds):
     simplices = tri.simplices
 
     nodes = len(node_data)
-    stresses = node_stress[:,1].transpose()
-    node_n = np.array([node_data[:,0]]).transpose()
+    stresses = node_stress[:,1]
     xs = np.array([node_data[:,1]]).transpose()*1e3
     ys =  np.array([node_data[:,2]]).transpose()*1e3
     zs =  np.array([node_data[:,3]]).transpose()*1e3
+    k = np.concatenate((xs,ys,zs), axis=1)
     
-    ccc= np.concatenate((xs,ys,zs), axis=1)
-
-    def k(x,y,z):
-        if np.array([x,y,z] in ccc):
-            return stresses[ccc.tolist().index([x,y,z])]
+    
+    import random
+    def f(x,y,z):
+        if [x,y,z] in k:
+            i = k.tolist().index([x,y,z])
+            return stresses[i]
         return random.random()
-
-    #f = RegularGridInterpolator((node_data[1], node_data[2], node_data[3]),stresses) 
 
   
 
@@ -79,7 +76,8 @@ def plot(node_data, node_stress, dx, ds):
                                 title="aileron",
                                 colormap="Portland",
                                 show_colorbar=True,
-                                color_func=k,
+                                color_func=f,
+                                plot_edges=False,
                                 aspectratio=dict(x=1, y=(max(y)-min(y)) / 1691, z=(max(z)-min(z)) / 1691),
                                 )
 
