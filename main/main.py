@@ -15,7 +15,7 @@ from MOI import calculate_inertia_yy, calculate_inertia_zz, calculate_rotated_in
 from deflections import get_deflections_func
 from tools import *
 
-case = 'LC1'
+case = 'R2'
 Cases = {'R1': {'q': 0, 'p': 0, 'theta': 26*np.pi/180}, 'R2': {'q': 0, 'p': 0,'theta': -26*np.pi/180},
          'LC1': {'q': 27.1e2, 'p': 37.9e3, 'theta': 26*np.pi/180}, 'LC2': {'q': 27.1e2, 'p': 37.9e3, 'theta': -26*np.pi/180}}
 #R1 - Upward rotation without aerodynamic and actuator loads
@@ -90,7 +90,7 @@ def get_section_properties(aileron_obj):
 
     y_bar, z_bar = rotate_points_yz([ybar],[zbar],0,0,theta)
 
-    return I_zz, I_yy, I_zy, y_bar[0], z_bar[0]
+    return I_zz, I_yy, I_zy, y_bar[0], z_bar[0], inertia_uu, inertia_vv
 
 def get_reaction_forces(I_zz, I_yy, I_zy):
     x = reaction_forces(C_a, l_a, h_a, x_a, x_1, x_2, x_3, d_1, d_3, d_act1, d_act2, degrees(theta), E, P, q, I_zz, I_yy, I_zy)
@@ -214,7 +214,7 @@ def main(args):
     context = (logger, aileron_obj)
 
     #Inertia/cross section properties
-    I_zz, I_yy, I_zy, ybar, zbar = get_section_properties(context[1])
+    I_zz, I_yy, I_zy, ybar, zbar, I_zz1, I_yy1 = get_section_properties(context[1])
     
     #Reaction forces
     reaction_forces_dict = {}
@@ -230,21 +230,9 @@ def main(args):
     F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, K1, K2 = convert_reaction_forces_dict(reaction_forces_dict)
     save_reaction_force(F_y1, F_y2, F_y3, F_z1, F_z2, F_zI, case)
 
+
     F_y, F_z, M_y, M_z = get_moment_functions(reaction_forces_dict)
     defl_y, defl_z = get_deflections_func(x_1, x_2, x_3, x_a, E, I_zz, I_yy, I_zy, F_y1, F_z1, F_y2, F_z2, F_y3, F_zI, K1, K2, P, q)
-
-    #x = []
-    #y = []
-    #y1 = []
-    #for i in np.arange(0,l_a, 0.001):
-    #    x.append(i)
-    #    y.append(F_y(i))
-    #    y1.append(M_y(i))
-
-    #plt.plot(x,y)
-    #plt.plot(x,y1)
-
-    #plt.show()
 
     #start loop over length
 
@@ -257,6 +245,7 @@ def main(args):
 
     defl_y_lst = []
     defl_z_lst = []
+    twist = 0
 
     discretized_skin_pos = discretize_skin(n) 
     z_pos_f, y_pos_f = [i[0] for i in discretized_skin_pos], [i[1] for i in discretized_skin_pos]
@@ -264,16 +253,20 @@ def main(args):
     tmp = rotate_points_yz(y_pos_f, z_pos_f, 0, 0, theta)
     rotated_discretized_skin_pos = [ [tmp[1][i],tmp[0][i]] for i in range(len(tmp[0]))]
 
+    from shear import calc_shear
     for current_distance in np.arange(0, l_a+dx, dx):
-        print(current_distance)
+        # print(current_distance)
 
         #Bending stresses
         sigma_z = find_bending_stresses(current_distance, rotated_discretized_skin_pos, I_zz, I_yy, I_zy, ybar, zbar, M_y, M_z)
          
         #Shear stresses
-        tau_yz = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
+        tau_yz, dtdx = find_shear_stresses(current_distance, discretized_skin_pos, l_a, x_1, x_2, x_3, x_a, d_1, d_3, C_a, h_a, G, t_sp, t_sk, d_act1, d_act2, I_zz, I_yy, I_zy, ybar, zbar, theta, F_z2, F_y1, F_y2, F_y3, 0, 0, F_z1, F_zI, P, q)
         #Von Misses
-        sigma_max = get_von_misses(sigma_z, tau_yz)  
+        sigma_max = get_von_misses(sigma_z, tau_yz)
+
+        #Calculate shear stresses for all points on the rotated_discretized_skin and dtheta/dx
+        # twist = calc_shear(C_a,h_a,t_sk, t_sp, theta, G,I_zz1, I_yy1, 0,0,0,F_z(current_distance),F_y(current_distance))
 
 
         #Deflection
@@ -281,20 +274,20 @@ def main(args):
         deflection_y = defl_y(current_distance) + d_1
         deflection_z = defl_z(current_distance)
 
+        # twist
+        twist += dtdx * dx
+
         #Positions
         x_pos = [current_distance for i in range(len(y_pos_f))]
         y_pos = y_pos_f
         z_pos = z_pos_f
 
-        y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta)
+        y_pos, z_pos = rotate_points_yz(y_pos, z_pos, 0, 0, theta + twist)
 
-        y_pos = (np.array(y_pos) + 0*deflection_y).tolist()
-        z_pos = (np.array(z_pos) + 0*deflection_z).tolist()
+        y_pos = (np.array(y_pos) + deflection_y).tolist()
+        z_pos = (np.array(z_pos) + deflection_z).tolist()
 
 
-        
-
-            
         #Store local section results
         x_lst.append(x_pos)
         y_lst.append(y_pos)
@@ -306,13 +299,6 @@ def main(args):
         defl_z_lst.append((n+2)*[deflection_z])
 
 
-
-    plot_figure(x_lst, y_lst, z_lst, sigma_max_lst)
-
-
-    #plt.plot([x[1] for x in x_lst], [s[1] for s in sigma_z_lst])
-    #plt.show()
-
     #Write Output
     write_header(arguments.out)
     write_program_settings(arguments.out)
@@ -320,11 +306,7 @@ def main(args):
     write_forces(arguments.out, reaction_forces_dict)
     save_deflections(x_lst, y_lst, z_lst, defl_y_lst, defl_z_lst, case)
     save_stress(x_lst, y_lst, z_lst, sigma_max_lst, case)
-    #defl_y_lst = [defl_y(i)+d_1 for i in np.linspace(0, l_a, 1000)]
-    #plt.plot(np.linspace(0, l_a, 1000), defl_y_lst)
-    #print(defl_z(x_1), d_1)
-    #print(defl_z(x_3), d_3)
-    #plt.show()
+    plot_figure(x_lst, y_lst, z_lst, sigma_z_lst)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

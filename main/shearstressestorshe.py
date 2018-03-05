@@ -152,7 +152,7 @@ def find_shear_stresses(x, discretized_skin_pos, la, x1, x2, x3, xa, d1, d3, Ca,
             shearstress.append(float(q23)/tsk)
         else:
             shearstress.append(0)
-    return shearstress
+    return shearstress, 0 #  in devel
     #print(sol[1])
     #print(q23)
     #print(twistsec)

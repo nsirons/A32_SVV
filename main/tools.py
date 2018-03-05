@@ -14,6 +14,7 @@ def generate_reaction_forces_file(fp):
         }
 
     json.dump(reaction_forces, fp)
+    exit()
     return
 
 

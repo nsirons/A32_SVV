@@ -25,7 +25,7 @@ def calc_shear(Ca, ha, t_skin, t_spar, theta, G,
     # qb as a function of theta/s for each wall, q12_I init for I, q_23 init for II, others q2+q1(end)
     q12_I = lambda theta: k1 * t_skin * (ha / 2) ** 2 * np.cos(theta) + k2 * t_skin * (ha / 2) ** 2 * np.sin(theta)
 
-    q21 = lambda s: k2 * t_spar * (-ha / 2 * s + 0.5 * s ** 2) + q12_I(np.pi / 2)
+    q21 = lambda s: k2 * t_spar * (-ha / 2 * s + 0.5 * s ** 2) + q12_I(np.pi)
 
     q23 = lambda s: k1 * t_skin * (Ca - ha / 2) / l_23 * s ** 2 / 2 + \
                     k2 * t_skin * (-ha / 2 * s + (ha / 2) / l_23 * s ** 2 / 2)
@@ -47,12 +47,12 @@ def calc_shear(Ca, ha, t_skin, t_spar, theta, G,
     # Calculate Moment around hinge, caused by shear flow
     p0_2 = (Ca - ha / 2) * ha / 2 / l_23  # altitude of right triangle
 
-    theta = np.pi / 2  # along the semicircle
+    theta = np.pi  # along the semicircle
     s_skin = np.hypot((Ca - ha / 2), ha / 2)  # along the wall_23 = wall_31
     s_spar = ha  # spar height
     M1 = ha ** 3 * t_skin * (k1 * np.sin(theta) - k2 * np.cos(theta)) / 8 + 0  # p0 = ha/2
 
-    M2 = -t_skin * (((ha - 2 * Ca) * k1 - 3 * ha * k2) * s_skin + 6 * l_23 * (-Ca * k1 + ha * k2)) * s_skin ** 2 / (
+    M2 = p0_2*-t_skin * (((ha - 2 * Ca) * k1 - 3 * ha * k2) * s_skin + 6 * l_23 * (-Ca * k1 + ha * k2)) * s_skin ** 2 / (
             12 * l_23)  # from Maple
 
     # Solve System: 1st&2nd are dtheta/dz = int of q, 3rd Moment caused by forces + shearflow+torque = 0
@@ -69,7 +69,6 @@ def calc_shear(Ca, ha, t_skin, t_spar, theta, G,
                                      k1 * t_skin * (Ca * s_skin - 0.5 * (Ca - ha / 2) * s_skin ** 2 / l_23) -
                                      0.25 * k2 * t_skin * ha * s_skin ** 2 * s_spar / l_23 - k2 * t_spar * (
                                              0.25 * ha * s_spar ** 2 - 1 / 6 * s_spar ** 3))],
-
                   [-1 / (A_II * G) * k1 * t_skin * (Ca - (1 / 2) * ha) * s_skin ** 3 / (3 * l_23) + 2 * k2 * t_skin * (
                           -(1 / 4) * ha * s_skin ** 2 + ha * s_skin ** 3 / (12 * l_23))
                    + k1 * t_skin * ((1 / 2) * Ca * s_skin ** 2 - (Ca - (1 / 2) * ha) * s_skin ** 3 / (6 * l_23)) +
@@ -78,8 +77,7 @@ def calc_shear(Ca, ha, t_skin, t_spar, theta, G,
                    k1 * t_skin * (Ca * s_skin - (Ca - (1 / 2) * ha) * s_skin ** 2 / (2 * l_23)) * s_spar + k2 * t_skin * ha * s_skin ** 2 * s_spar / (4 * l_23) +
                    k2 * t_spar * ((1 / 4) * ha * s_spar ** 2 - (1 / 6) * s_spar ** 3) - (1 / 4) * k2 * t_skin * ha ** 2 * s_spar -
                    k2 * t_spar * (-(1 / 4) * ha * s_spar ** 2 + (1 / 6) * s_spar ** 3)],
-
-                  [left_side - M1 - M2]])
+                  [left_side - M1 - M2]]).reshape((3,1))
 
     x = np.linalg.solve(A, b)
 
